@@ -28,6 +28,8 @@ export const Auth = ({ isOpen, onClose, onLogin }: AuthProps) => {
                 toast.error("Authentication failed");
             }
         },
+        onError: () => toast.error("Google Login Failed"),
+        flow: 'implicit', 
     });
 
     return (
