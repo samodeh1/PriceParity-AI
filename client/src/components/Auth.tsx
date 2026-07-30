@@ -14,10 +14,10 @@ export const Auth = ({ isOpen, onClose, onLogin }: AuthProps) => {
 
     const googleLogin = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
-            const loading = toast.loading("Connecting to PriceParity...");
+            const loading = toast.loading("Verifying Google account...");
             try {
                 
-                const res = await axios.post('https://priceparity-api-live.onrender.com/api/auth/google', {
+                const res = await axios.post(`${API_URL}/google`, {
                     token: tokenResponse.access_token,
                 });
                 onLogin(res.data.token, res.data.user);
@@ -25,11 +25,13 @@ export const Auth = ({ isOpen, onClose, onLogin }: AuthProps) => {
                 toast.success("Welcome to the global market!");
             } catch (err) {
                 toast.dismiss(loading);
-                toast.error("Authentication failed");
+                toast.error("Google Authentication failed");
             }
         },
         onError: () => toast.error("Google Login Failed"),
-        flow: 'implicit', 
+        flow: 'implicit',
+        ux_mode: 'redirect', 
+        redirect_uri: 'https://price-parity-ai-2fbe.vercel.app', 
     });
 
     return (
