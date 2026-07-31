@@ -18,7 +18,7 @@ export const generateLocalizedPitch = async (productName: string, price: number,
 
         // 2. The AI Call (Using the Luna model you selected)
         const response = await openai.chat.completions.create({
-            model: "gpt-5.6-luna", 
+            model: "gpt-4o-mini", 
             messages: [{ role: "user", content: prompt }],
         });
 
