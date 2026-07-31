@@ -29,9 +29,7 @@ export const Auth = ({ isOpen, onClose, onLogin }: AuthProps) => {
             }
         },
         onError: () => toast.error("Google Login Failed"),
-        flow: 'implicit',
-        ux_mode: 'redirect', 
-        redirect_uri: 'https://price-parity-ai-2fbe.vercel.app', 
+       
     });
 
     return (
