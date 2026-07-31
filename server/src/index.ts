@@ -13,11 +13,15 @@ import User from './models/User.js';
 import { initializePaystackPayment, verifyPaystackPayment } from './paystack.js';
 
 
-
 dotenv.config();
 const app = express();
-app.use(express.json());
 app.use(cors());
+
+app.use(cors({
+    origin: ["https://price-parity-ai-2fbe.vercel.app", "http://localhost:5173"],
+    credentials: true
+}));
+app.use(express.json());
 
 // THE CORE SaaS ROUTE
 // A user sends: { "price": 100, "country": "NG" }

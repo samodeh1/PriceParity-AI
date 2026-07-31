@@ -11,7 +11,7 @@ interface AuthProps {
 
 export const Auth = ({ isOpen, onClose, onLogin }: AuthProps) => {
     if (!isOpen) return null;
-
+    
     const API_URL = "https://priceparity-api-live.onrender.com/api/auth";
     const googleLogin = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
