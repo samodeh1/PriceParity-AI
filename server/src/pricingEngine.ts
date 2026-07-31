@@ -1,26 +1,26 @@
 // This data represents the multiplier for each country.
 // 1.0 means full price. 0.3 means a 70% discount is needed to be 'fair'.
-const pppMultipliers: Record<string, number> = {
-    "US": 1.0,    // USA (Base)
-    "GB": 0.9,    // United Kingdom
-    "CA": 0.9,    // Canada
-    "NG": 0.25,   // Nigeria (Significant discount needed)
-    "IN": 0.3,    // India
-    "BR": 0.45,   // Brazil
-    "DE": 0.95,   // Germany
-    "JP": 0.85    // Japan
+const pppData: Record<string, { multiplier: number; symbol: string; rate: number }> = {
+    "US": { multiplier: 1.0, symbol: "$", rate: 1 },
+    "GB": { multiplier: 0.9, symbol: "£", rate: 0.78 },
+    "NG": { multiplier: 0.25, symbol: "₦", rate: 1600 }, // Current approx rate
+    "IN": { multiplier: 0.3, symbol: "₹", rate: 83 },
+    "BR": { multiplier: 0.45, symbol: "R$", rate: 5.4 }
 };
+
 
 // pricingEngine.ts
 
 export const calculatePPPPrice = (originalPrice: number, countryCode: string) => {
-    // Ensure you use 'countryCode' here to match the parameter above
-    const multiplier = pppMultipliers[countryCode.toUpperCase()] || 1.0;
-    const suggestedPrice = originalPrice * multiplier;
+    const country = pppData[countryCode.toUpperCase()] || pppData["US"];
+    
+    const suggestedPriceUSD = originalPrice * country.multiplier;
+    const localCurrencyPrice = suggestedPriceUSD * country.rate;
     
     return {
-        suggestedPrice: Number(suggestedPrice.toFixed(2)),
-        discountedPercentage: Math.round((1 - multiplier) * 100),
-        multiplier
+        suggestedPrice: Number(suggestedPriceUSD.toFixed(2)),
+        localPriceFormatted: `${country.symbol}${Math.round(localCurrencyPrice).toLocaleString()}`,
+        discountPercentage: Math.round((1 - country.multiplier) * 100),
+        symbol: country.symbol
     };
 };

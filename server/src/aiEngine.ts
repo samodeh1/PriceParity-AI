@@ -7,26 +7,23 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-export const generateLocalizedPitch = async (productName: string, price: number, country: string) => {
+export const generateLocalizedPitch = async (productName: string, localPrice: string, country: string) => {
     try {
-        // 1. The Dynamic Prompt (Uses the data from the user)
         const prompt = `
-            Write a punchy 2-sentence sales pitch for "${productName}" priced at $${price} in ${country}.
-            The price has been adjusted for ${country}'s local purchasing power.
-            Mention the fair local price and use an emoji.
+            Write a punchy 2-sentence sales pitch for "${productName}".
+            The price for customers in ${country} is exactly ${localPrice}.
+            1. Mention the price "${localPrice}" exactly as written.
+            2. Use a culturally relevant emoji for ${country}.
+            3. Do not mention USD.
         `;
 
-        // 2. The AI Call (Using the Luna model you selected)
         const response = await openai.chat.completions.create({
             model: "gpt-4o-mini", 
             messages: [{ role: "user", content: prompt }],
         });
 
-        // 3. Return the AI's words
-        return response.choices[0].message.content || "Special local pricing available! 🚀";
-
+        return response.choices[0].message.content;
     } catch (error) {
-        console.error("OpenAI API Error:", error);
-        return "Special local pricing available! 🚀"; // Fallback message if API fails
+        return `Get it now for just ${localPrice}! 🚀`;
     }
 };

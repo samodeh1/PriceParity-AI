@@ -43,7 +43,7 @@ app.post('/api/calculate', protect, async (req: any, res) => {
         let pitch = "Upgrade to Pro to unlock AI Marketing Pitches";
 
         if (user?.isPro) {
-            pitch = await generateLocalizedPitch(productName, pricing.suggestedPrice, country);
+            pitch = await generateLocalizedPitch(productName, pricing.localPriceFormatted, country);
         }
 
         // 3. SAVE TO DATABASE
