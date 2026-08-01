@@ -149,11 +149,15 @@ const syncProfile = async (currentToken: string) => {
   } catch (err: any) {
     console.error("Sync failed:", err.response?.status);
 
-    // This updates the UI with the latest isPro status from MongoDB
-    setUser(res.data); 
     if (err.response?.status === 401) {
       handleLogout();
     }
+    // This updates the UI with the latest isPro status from MongoDB
+    setUser(res.data); 
+  } catch (err) {
+    console.error("Failed to sync profile");
+    // If token is invalid, log them out
+    handleLogout();
   }
 };
 
