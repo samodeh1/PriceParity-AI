@@ -140,13 +140,20 @@ const syncProfile = async (currentToken: string) => {
   try {
     const res = await axios.get('https://priceparity-api-live.onrender.com/api/auth/me', {
       headers: { 'x-auth-token': currentToken }
-    });
+});
+
+ // 2. Only update if we actually got data
+    if (res.data) {
+      setUser(res.data);
+    }
+  } catch (err: any) {
+    console.error("Sync failed:", err.response?.status);
+
     // This updates the UI with the latest isPro status from MongoDB
     setUser(res.data); 
-  } catch (err) {
-    console.error("Failed to sync profile");
-    // If token is invalid, log them out
-    handleLogout();
+    if (err.response?.status === 401) {
+      handleLogout();
+    }
   }
 };
 
