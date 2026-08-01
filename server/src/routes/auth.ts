@@ -6,6 +6,16 @@ import axios from 'axios';
 
 const router = express.Router(); 
 
+// Get latest user info (The "Me" route)
+router.get('/me', protect, async (req: any, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        res.json(user);
+    } catch (err) {
+        res.status(500).send('Server Error');
+    }
+});
+
 router.post('/google', async (req, res) => {
     try {  
         const { token } = req.body;

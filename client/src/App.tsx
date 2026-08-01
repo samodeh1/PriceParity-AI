@@ -136,9 +136,25 @@ const handleUpgrade = async () => {
   }
 };
 
+const syncProfile = async (currentToken: string) => {
+  try {
+    const res = await axios.get('https://fintrack-api-812r.onrender.com/api/auth/me', {
+      headers: { 'x-auth-token': currentToken }
+    });
+    // This updates the UI with the latest isPro status from MongoDB
+    setUser(res.data); 
+  } catch (err) {
+    console.error("Failed to sync profile");
+    // If token is invalid, log them out
+    handleLogout();
+  }
+};
+
 // Update your useEffect to fetch history whenever the user is logged in
 useEffect(() => {
   if (token) {
+    localStorage.setItem('parity_token', token);
+    syncProfile(token)
     fetchHistory();
   }
 }, [token, result]); // Re-fetch when a new result is generated
