@@ -138,7 +138,7 @@ const handleUpgrade = async () => {
 
 const syncProfile = async (currentToken: string) => {
   try {
-    const res = await axios.get('https://fintrack-api-812r.onrender.com/api/auth/me', {
+    const res = await axios.get('https://priceparity-api-live.onrender.com/api/auth/me', {
       headers: { 'x-auth-token': currentToken }
     });
     // This updates the UI with the latest isPro status from MongoDB

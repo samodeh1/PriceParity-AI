@@ -7,7 +7,7 @@ import axios from 'axios';
 const router = express.Router(); 
 
 // Get latest user info (The "Me" route)
-router.get('/me', protect, async (req: any, res) => {
+router.get('/me', protect, async (req: any, res: any) => {
     try {
         const user = await User.findById(req.user.id).select('-password');
         res.json(user);
