@@ -7,6 +7,7 @@ import axios from 'axios';
 const router = express.Router(); 
 
 // Get latest user info (The "Me" route)
+// Get latest user info (Required for syncProfile to work)
 router.get('/me', protect, async (req: any, res: any) => {
     try {
         const user = await User.findById(req.user.id).select('-password');

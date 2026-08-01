@@ -136,38 +136,38 @@ const handleUpgrade = async () => {
   }
 };
 
+// ... (Your states and handleOptimize remain the same)
+
 const syncProfile = async (currentToken: string) => {
   try {
     const res = await axios.get('https://priceparity-api-live.onrender.com/api/auth/me', {
       headers: { 'x-auth-token': currentToken }
-});
+    });
 
- // 2. Only update if we actually got data
     if (res.data) {
       setUser(res.data);
+      // If the backend says they are Pro, update the local state
+      console.log("Profile synced. Pro Status:", res.data.isPro);
     }
   } catch (err: any) {
     console.error("Sync failed:", err.response?.status);
 
+    // ONLY logout if the token is actually invalid (401)
     if (err.response?.status === 401) {
+      toast.error("Session expired. Please login again.");
       handleLogout();
     }
-    // This updates the UI with the latest isPro status from MongoDB
-    setUser(res.data); 
-  } catch (err) {
-    console.error("Failed to sync profile");
-    // If token is invalid, log them out
-    handleLogout();
+    // If it's a 404, it means you forgot to deploy the /me route to the backend!
+    if (err.response?.status === 404) {
+      console.error("Error: Backend route /api/auth/me not found.");
+    }
   }
 };
 
-// App.tsx logic section
-
 const handleLogout = () => {
+  localStorage.removeItem('parity_token');
   setToken(null);
   setUser(null);
-  localStorage.removeItem('parity_token');
-  // Refresh the page to take them back to the landing page
   window.location.reload(); 
 };
 
