@@ -150,6 +150,16 @@ const syncProfile = async (currentToken: string) => {
   }
 };
 
+// App.tsx logic section
+
+const handleLogout = () => {
+  setToken(null);
+  setUser(null);
+  localStorage.removeItem('parity_token');
+  // Refresh the page to take them back to the landing page
+  window.location.reload(); 
+};
+
 // Update your useEffect to fetch history whenever the user is logged in
 useEffect(() => {
   if (token) {
@@ -218,7 +228,9 @@ useEffect(() => {
           token ? (
             <div className="flex items-center gap-3">
               <span className="text-sm font-bold text-slate-600">Hi, {user?.username || 'Member'}</span>
-              <button onClick={() => { setToken(null); localStorage.clear(); }} className="text-xs text-red-500 font-bold">Logout</button>
+                <button onClick={handleLogout} className="text-xs text-red-500 font-bold border-l pl-3 ml-1 border-slate-100">
+                  Logout
+              </button>
             </div>
           ) : (
           <button 
