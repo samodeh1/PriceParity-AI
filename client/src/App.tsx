@@ -164,11 +164,50 @@ const syncProfile = async (currentToken: string) => {
   }
 };
 
+const IDLE_TIMEOUT = 3 * 60 * 1000; // 3 Minutes in milliseconds
+
+useEffect(() => {
+    // Only start the timer if the user is actually logged in
+    if (!token) return;
+
+    let timer: number;
+
+    const resetTimer = () => {
+      // 1. Clear the existing timer
+      if (timer) clearTimeout(timer);
+
+      // 2. Start a new timer
+      timer = window.setTimeout(() => {
+        toast("Session expired due to inactivity.", { icon: '⏰' });
+        handleLogout();
+      }, IDLE_TIMEOUT);
+    };
+
+    // 3. Listen for these "Activity" events
+    const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
+    
+    events.forEach(event => {
+      window.addEventListener(event, resetTimer);
+    });
+
+    // 4. Initial start of the timer
+    resetTimer();
+
+    // 5. Cleanup: Stop listening if the user logs out or closes the app
+    return () => {
+      events.forEach(event => {
+        window.removeEventListener(event, resetTimer);
+      });
+      if (timer) clearTimeout(timer);
+    };
+  }, [token]); // Re-run this effect if the login state changes
+
 const handleLogout = () => {
   localStorage.removeItem('parity_token');
   setToken(null);
   setUser(null);
-  window.location.reload(); 
+  window.location.reload();
+  window.location.href = "/";  
 };
 
 // Update your useEffect to fetch history whenever the user is logged in
