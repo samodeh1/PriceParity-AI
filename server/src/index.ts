@@ -29,17 +29,15 @@ app.use(express.json());
 app.post('/api/calculate', protect, async (req: any, res) => {
     const { price, country, productName } = req.body;
     
-    // 1. Always get the absolute latest user data from MongoDB
-    const user = await User.findById(req.user.id);
-
-    if (!user) return res.status(404).json({ message: "User not found" });
-
     try {
+        // 1. Fetch the user FRESH from the database every time
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
         const pricing = calculatePPPPrice(price, country);
 
+        // 2. Logic Check: If they are Pro, give the real pitch. If not, give the "Upgrade" message.
         let pitch = "Upgrade to Pro to unlock AI Marketing Pitches 🚀";
-        
-        // 2. The Backend checks the REAL DB status
         if (user.isPro) {
             pitch = await generateLocalizedPitch(productName, pricing.localPriceFormatted, country);
         }
@@ -54,12 +52,12 @@ app.post('/api/calculate', protect, async (req: any, res) => {
         });
         await newStrategy.save();
 
-        // 3. Return the result AND the latest Pro status
+        // 3. Return the result AND the absolute truth about their Pro status
         res.json({
             ...pricing,
             productName,
             localizedPitch: pitch,
-            isPro: user.isPro // <--- Add this line
+            isPro: user.isPro // This tells the frontend if they are allowed to see it
         });
     } catch (error) {
         res.status(500).json({ error: "Error generating strategy" })
