@@ -61,7 +61,8 @@ app.post('/api/calculate', protect, async (req: any, res) => {
         res.json({
             ...pricing,
             productName,
-            localizedPitch: pitch
+            localizedPitch: pitch,
+            isPro: user.isPro
         });
     } catch (error) {
         console.error(error);
