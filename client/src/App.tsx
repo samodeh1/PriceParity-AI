@@ -25,11 +25,7 @@ function App() {
 
   const handleOptimize = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) {
-      toast.error("Please sign in to generate AI strategies");
-      setIsAuthOpen(true);
-      return;
-    }
+    if (!token) return setIsAuthOpen(true);
 
     setLoading(true);
     try {
@@ -48,10 +44,9 @@ function App() {
       // This removes the blur instantly if the server says the user is Pro
       setUser((prev: any) => ({ ...prev, isPro: res.data.isPro }));
 
-      toast.success("Global strategy generated!");
-      fetchHistory(); // Refresh history list
+      toast.success("Strategy generated!");
+      fetchHistory();
     } catch (err: any) {
-      if (err.response?.status === 401) handleLogout();
       toast.error("Failed to generate strategy");
     } finally {
       setLoading(false);
