@@ -28,27 +28,24 @@ app.use(express.json());
 // The app returns: { "suggestedPrice": 25, "discount": 75% }
 app.post('/api/calculate', protect, async (req: any, res) => {
     const { price, country, productName } = req.body;
-
-    // 1. Fetch the latest user status from DB
+    
+    // 1. Always get the absolute latest user data from MongoDB
     const user = await User.findById(req.user.id);
 
-    if (!price || !country || !productName) {
-        return res.status(400).json({ message: "Missing required field" });
-    }
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     try {
-        // 1. Calculate the price
         const pricing = calculatePPPPrice(price, country);
 
-        let pitch = "Upgrade to Pro to unlock AI Marketing Pitches";
-
-        if (user?.isPro) {
+        let pitch = "Upgrade to Pro to unlock AI Marketing Pitches 🚀";
+        
+        // 2. The Backend checks the REAL DB status
+        if (user.isPro) {
             pitch = await generateLocalizedPitch(productName, pricing.localPriceFormatted, country);
         }
 
-        // 3. SAVE TO DATABASE
         const newStrategy = new Strategy({
-            user: req.user.id, // Comes from the 'protect' middleware
+            user: user._id,
             productName,
             originalPrice: price,
             suggestedPrice: pricing.suggestedPrice,
@@ -57,18 +54,16 @@ app.post('/api/calculate', protect, async (req: any, res) => {
         });
         await newStrategy.save();
 
-        // Return everything combined
+        // 3. Return the result AND the latest Pro status
         res.json({
             ...pricing,
             productName,
             localizedPitch: pitch,
-            isPro: user.isPro
+            isPro: user.isPro // <--- Add this line
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error generating global strategy" });
+        res.status(500).json({ error: "Error generating strategy" })
     }
-
 });
 
 
