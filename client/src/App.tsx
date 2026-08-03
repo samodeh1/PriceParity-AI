@@ -40,7 +40,14 @@ function App() {
       }, {
         headers: { 'x-auth-token': token }
       });
+
+      // 1. Update the result
       setResult(res.data);
+
+      // 2. FORCE update the user state with the truth from the server
+      // This removes the blur instantly if the server says the user is Pro
+      setUser((prev: any) => ({ ...prev, isPro: res.data.isPro }));
+
       toast.success("Global strategy generated!");
       fetchHistory(); // Refresh history list
     } catch (err: any) {
@@ -94,6 +101,8 @@ function App() {
     localStorage.removeItem('parity_token');
     setToken(null);
     setUser(null);
+    setHistory([]);
+    setResult(null); // Clear the previous result on logout
     window.location.href = "/";
   };
 
