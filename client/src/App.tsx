@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from 'axios';
-import { Globe, DollarSign, Sparkles, ArrowRight, CheckCircle2, Zap, ShieldCheck, BarChart3, Trash2, LogOut } from 'lucide-react';
+import { Globe, Sparkles, ArrowRight, Zap, ShieldCheck, BarChart3 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import type { PricingResult } from "./types";
 import { Auth } from "./components/Auth";
