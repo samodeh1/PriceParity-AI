@@ -220,6 +220,9 @@ function App() {
             <p className="text-slate-500 text-sm">Embed our simple script into your site to automate global pricing with zero maintenance.</p>
           </div>
         </section>
+        <button onClick={() => setIsAuthOpen(true)} className="bg-blue-600 text-white px-10 py-5 rounded-3xl font-bold text-xl hover:bg-blue-700 shadow-2xl shadow-blue-200 transition-all active:scale-95 flex items-center gap-3 mx-auto">
+            Get Started for Free <ArrowRight />
+          </button>
       </div>
     );
   }
