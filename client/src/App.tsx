@@ -20,6 +20,7 @@ function App() {
   const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('parity_token'));
   const [history, setHistory] = useState<any[]>([]);
+  const [authLoading, setAuthLoading] = useState(true);
 
   // --- 2. LOGIC HANDLERS ---
 
@@ -80,17 +81,17 @@ function App() {
   };
 
   const syncProfile = async (currentToken: string) => {
-    try {
-      const res = await axios.get(`${API_BASE}/auth/me`, {
-        headers: { 'x-auth-token': currentToken }
-      });
-      if (res.data) setUser(res.data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        handleLogout();
-      }
-    }
-  };
+  try {
+    const res = await axios.get(`${API_BASE}/auth/me`, {
+      headers: { 'x-auth-token': currentToken }
+    });
+    setUser(res.data);
+  } catch (err) {
+    handleLogout();
+  } finally {
+    setAuthLoading(false); // Stop loading regardless of result
+  }
+};
 
   const handleLogout = () => {
     localStorage.removeItem('parity_token');
@@ -162,6 +163,12 @@ function App() {
       if (timer) clearTimeout(timer);
     };
   }, [token]);
+
+  if (token && authLoading) {
+  return <div className="min-h-screen flex items-center justify-center">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+  </div>;
+}
 
   // --- 4. RENDER LOGIC ---
 
