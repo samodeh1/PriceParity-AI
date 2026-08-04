@@ -6,17 +6,6 @@ import axios from 'axios';
 
 const router = express.Router(); 
 
-// Get latest user info (The "Me" route)
-// Get latest user info (Required for syncProfile to work)
-router.get('/me', protect, async (req: any, res: any) => {
-    try {
-        const user = await User.findById(req.user.id).select('-password');
-        res.json(user);
-    } catch (err) {
-        res.status(500).send('Server Error');
-    }
-});
-
 router.post('/google', async (req, res) => {
     try {  
         const { token } = req.body;
@@ -51,6 +40,17 @@ router.post('/google', async (req, res) => {
     } catch (error: any) {
         console.error("Google Auth Route Error:", error?.response?.data || error.message);
         return res.status(500).json({ message: "Google Auth Failed", error: error.message });
+    }
+});
+
+// Get latest user info (The "Me" route)
+// Get latest user info (Required for syncProfile to work)
+router.get('/me', protect, async (req: any, res: any) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        res.json(user);
+    } catch (err) {
+        res.status(500).send('Server Error');
     }
 });
 
