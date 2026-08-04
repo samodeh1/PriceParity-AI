@@ -139,6 +139,7 @@ function App() {
   // Auth & Data Sync Effect
   useEffect(() => {
     if (token) {
+      localStorage.setItem('parity_token', token);
       syncProfile(token);
       fetchHistory();
     }
