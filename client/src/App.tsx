@@ -80,16 +80,27 @@ function App() {
     }
   };
 
-  const syncProfile = async (currentToken: string) => {
+ const syncProfile = async (currentToken: string) => {
   try {
     const res = await axios.get(`${API_BASE}/auth/me`, {
       headers: { 'x-auth-token': currentToken }
     });
-    setUser(res.data);
-  } catch (err) {
-    handleLogout();
-  } finally {
-    setAuthLoading(false); // Stop loading regardless of result
+
+    if (res.data) {
+      setUser(res.data);
+      console.log("Profile synced. Pro Status:", res.data.isPro);
+    }
+  } catch (err: any) {
+    console.error("Sync failed status:", err.response?.status);
+
+    // ONLY logout if the server specifically says the token is fake/expired (401)
+    if (err.response?.status === 401) {
+      toast.error("Session expired.");
+      handleLogout();
+    }
+    
+    // If it's a 404 or 500, we don't logout, 
+    // we just let the user stay on the page with limited data.
   }
 };
 
@@ -97,8 +108,6 @@ function App() {
     localStorage.removeItem('parity_token');
     setToken(null);
     setUser(null);
-    setHistory([]);
-    setResult(null); // Clear the previous result on logout
     window.location.href = "/";
   };
 
