@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import axios from 'axios';
-import { Globe, Sparkles, ArrowRight, Zap, ShieldCheck, BarChart3 } from 'lucide-react';
+import { Globe, Sparkles, ArrowRight, Zap, ShieldCheck, BarChart3, DollarSign, CheckCircle2 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import type { PricingResult } from "./types";
 import { Auth } from "./components/Auth";
 
 // --- CONSTANTS ---
-const IDLE_TIMEOUT = 3 * 60 * 1000; // 3 Minutes
+const IDLE_TIMEOUT = 15 * 60 * 1000; 
 const API_BASE = "https://priceparity-api-live.onrender.com/api";
 
 function App() {
@@ -38,13 +38,9 @@ function App() {
         headers: { 'x-auth-token': token }
       });
 
-      // 1. Update the result
       setResult(res.data);
-
-      // 2. FORCE update the user state with the truth from the server
-      // This removes the blur instantly if the server says the user is Pro
+      // Sync the Pro status from the calculation result immediately
       setUser((prev: any) => ({ ...prev, isPro: res.data.isPro }));
-
       toast.success("Strategy generated!");
       fetchHistory();
     } catch (err: any) {
@@ -80,19 +76,24 @@ function App() {
     }
   };
 
- const syncProfile = async (currentToken: string) => {
-  try {
-    const res = await axios.get(`${API_BASE}/auth/me`, {
-      headers: { 'x-auth-token': currentToken }
-    });
-    if (res.data) setUser(res.data);
-  } catch (err: any) {
-    if (err.response?.status === 401) handleLogout();
-  } finally {
-    // THIS FIXES THE ERROR: It uses the function to stop the loading screen
-    setAuthLoading(false); 
-  }
-};
+  const syncProfile = async (currentToken: string) => {
+    try {
+      const res = await axios.get(`${API_BASE}/auth/me`, {
+        headers: { 'x-auth-token': currentToken }
+      });
+      if (res.data) {
+        setUser(res.data);
+        console.log("Status Synced: isPro =", res.data.isPro);
+      }
+    } catch (err: any) {
+      console.error("Sync failed:", err.response?.status);
+      if (err.response?.status === 401) {
+        handleLogout();
+      }
+    } finally {
+      setAuthLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('parity_token');
@@ -109,9 +110,26 @@ function App() {
     setAuthLoading(false);
   };
 
+  const handleImplement = () => {
+    if (!user?.isPro) {
+      toast((t) => (
+        <span className="flex flex-col gap-2 p-2">
+          <b className="text-slate-800">Pro Feature!</b>
+          <p className="text-xs text-slate-500">Unlock the AI Pitch and website widget to start selling globally.</p>
+          <button
+            onClick={() => { toast.dismiss(t.id); handleUpgrade(); }}
+            className="bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-bold shadow-lg shadow-blue-100 transition hover:bg-blue-700">
+              Upgrade to Pro ($19)
+          </button>
+        </span>
+      ), { duration: 6000 });
+    } else {
+      document.getElementById('widget-section')?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   // --- 3. EFFECTS ---
 
-  // Payment Verification Effect
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
     const reference = query.get('reference');
@@ -123,7 +141,7 @@ function App() {
           const res = await axios.get(`${API_BASE}/paystack/verify?reference=${reference}`);
           if (res.data.isPro) {
             toast.dismiss(load);
-            toast.success("Upgrade Successful! Welcome to Pro. 🚀");
+            toast.success("Welcome to Pro! 🚀");
             if (token) syncProfile(token);
           }
         } catch (err) {
@@ -136,23 +154,22 @@ function App() {
     }
   }, [token]);
 
-  // Auth & Data Sync Effect
   useEffect(() => {
     if (token) {
-      localStorage.setItem('parity_token', token);
       syncProfile(token);
       fetchHistory();
+    } else {
+      setAuthLoading(false);
     }
   }, [token]);
 
-  // Idle Timer Effect
   useEffect(() => {
     if (!token) return;
     let timer: number;
     const resetTimer = () => {
       if (timer) clearTimeout(timer);
       timer = window.setTimeout(() => {
-        toast("Session expired due to inactivity.", { icon: '⏰' });
+        toast("Session expired.", { icon: '⏰' });
         handleLogout();
       }, IDLE_TIMEOUT);
     };
@@ -166,184 +183,190 @@ function App() {
   }, [token]);
 
   if (token && authLoading) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-    </div>
-  );
-}
-
-  // --- 4. RENDER LOGIC ---
-
-  // LANDING PAGE VIEW
-  if (!token) {
     return (
-      <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100">
-        <Toaster />
-        <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLogin={handleLoginSuccess} />
-        
-        <nav className="p-6 max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2 font-black text-2xl tracking-tighter">
-            <Globe className="text-blue-600" size={28} />
-            PRICE<span className="text-blue-600">PARITY</span>
-          </div>
-          <button onClick={() => setIsAuthOpen(true)} className="bg-slate-900 text-white px-6 py-2.5 rounded-full text-sm font-bold shadow-lg active:scale-95 transition">
-            Sign In
-          </button>
-        </nav>
-
-        <section className="max-w-6xl mx-auto px-6 pt-20 pb-32 text-center">
-          <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-xs font-black tracking-widest uppercase mb-6 animate-pulse">
-            <Sparkles size={14} /> AI-Powered Revenue Optimization
-          </div>
-          <h1 className="text-5xl md:text-7xl font-black text-slate-900 mb-8 leading-[1.1] tracking-tight">
-            The world is bigger than <br /> <span className="text-blue-600">just your country.</span>
-          </h1>
-          <p className="text-slate-500 text-xl md:text-2xl mb-12 max-w-2xl mx-auto leading-relaxed">
-            Stop losing 80% of your global sales. Use AI to price your products fairly for every economy on Earth.
-          </p>
-          <button onClick={() => setIsAuthOpen(true)} className="bg-blue-600 text-white px-10 py-5 rounded-3xl font-bold text-xl hover:bg-blue-700 shadow-2xl shadow-blue-200 transition-all active:scale-95 flex items-center gap-3 mx-auto">
-            Get Started for Free <ArrowRight />
-          </button>
-          <p className="mt-12 text-slate-400 text-sm font-medium uppercase tracking-widest">Trusted by 5,000+ Digital Creators</p>
-        </section>
-
-        <section className="max-w-6xl mx-auto px-6 py-20 grid md:grid-cols-3 gap-12 border-t border-slate-100">
-          <div className="space-y-4">
-            <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center"><Zap /></div>
-            <h4 className="text-xl font-bold font-sans">1. PPP Intelligence</h4>
-            <p className="text-slate-500 text-sm">We use global economic data to calculate the relative value of $1 in every economy.</p>
-          </div>
-          <div className="space-y-4">
-            <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center"><Sparkles /></div>
-            <h4 className="text-xl font-bold font-sans">2. Cultural AI</h4>
-            <p className="text-slate-500 text-sm">Our AI rewrites your marketing pitch to match the cultural success triggers of that region.</p>
-          </div>
-          <div className="space-y-4">
-            <div className="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center"><ShieldCheck /></div>
-            <h4 className="text-xl font-bold font-sans">3. 1-Line Widget</h4>
-            <p className="text-slate-500 text-sm">Embed our simple script into your site to automate global pricing with zero maintenance.</p>
-          </div>
-        </section>
-        <button onClick={() => setIsAuthOpen(true)} className="bg-blue-600 text-white px-10 py-5 rounded-3xl font-bold text-xl hover:bg-blue-700 shadow-2xl shadow-blue-200 transition-all active:scale-95 flex items-center gap-3 mx-auto">
-            Get Started for Free <ArrowRight />
-          </button>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  // DASHBOARD VIEW
+  // --- 4. RENDER LOGIC ---
+
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center text-center p-6">
+        <Toaster />
+        <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLogin={handleLoginSuccess} />
+        
+        <div className="max-w-3xl">
+          <div className="flex justify-center items-center gap-2 font-black text-2xl tracking-tighter mb-8 text-slate-900">
+            <Globe className="text-blue-600" size={32}/>
+            PRICE<span className="text-blue-600">PARITY</span>
+          </div>
+
+          <h1 className="text-6xl font-black text-slate-900 mb-6 leading-tight tracking-tight">
+            The world is bigger than <span className="text-blue-600">just your country.</span>
+          </h1>
+          <p className="text-slate-500 text-xl mb-12 px-10 leading-relaxed">
+            Stop losing 80% of your global sales. Use AI to price your products fairly for every economy on Earth.
+          </p>
+
+          <button 
+            onClick={() => setIsAuthOpen(true)}
+            className="bg-blue-600 text-white px-10 py-5 rounded-3xl font-bold text-xl hover:bg-blue-700 shadow-2xl shadow-blue-200 transition-all active:scale-95 flex items-center gap-3 mx-auto">
+            Get Started for Free <ArrowRight/>
+          </button>
+
+          <p className="mt-12 text-slate-400 text-xs font-bold uppercase tracking-[0.2em]">Trusted by Digital Creators Worldwide</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#fafafa] text-slate-900 font-sans">
       <Toaster />
       <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLogin={handleLoginSuccess} />
 
-      <nav className="p-6 max-w-6xl mx-auto flex justify-between items-center">
+      {/* DASHBOARD NAVBAR */}
+      <nav className="p-6 max-w-6xl mx-auto flex justify-between items-center bg-white/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="flex items-center gap-2 font-black text-xl tracking-tighter">
           <Globe className="text-blue-600" />
           PRICE<span className="text-blue-600">PARITY</span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
           {!user?.isPro && (
             <button onClick={handleUpgrade} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition">Upgrade to Pro ($19)</button>
           )}
           <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full border border-slate-100 shadow-sm">
-            <span className="text-sm font-bold text-slate-600">Hi, {user?.username?.split(' ')[0] || 'Member'}</span>
-            <button onClick={handleLogout} className="text-xs text-red-500 font-bold border-l pl-3 ml-1 border-slate-100">Logout</button>
+            <span className="text-sm font-bold text-slate-600 uppercase tracking-tighter">Hi, {user?.username?.split(' ')[0] || 'Member'}</span>
+            <button onClick={handleLogout} className="text-xs text-red-500 font-bold border-l pl-3 ml-1 border-slate-100 hover:text-red-700">Logout</button>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-4xl mx-auto px-6 py-12">
-        <div className="grid md:grid-cols-2 gap-12 items-start mb-20">
-          <form onSubmit={handleOptimize} className="bg-white p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 space-y-6">
-            <h2 className="text-xl font-black mb-4">New Strategy</h2>
+      <main className="max-w-5xl mx-auto px-6 py-12">
+        <div className="grid md:grid-cols-2 gap-12 items-start mb-24">
+          
+          {/* CALCULATOR FORM */}
+          <form onSubmit={handleOptimize} className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 space-y-6">
+            <h2 className="text-2xl font-black text-slate-800">New Strategy</h2>
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Product Name</label>
-              <input required value={productName} onChange={e => setProductName(e.target.value)} className="w-full mt-1 p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="e.g. Masterclass E-book" />
+              <input required value={productName} onChange={e => setProductName(e.target.value)} className="w-full mt-1 p-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="e.g. Masterclass Course" />
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">USA Price</label>
-                <input required type="number" value={price} onChange={e => setPrice(e.target.value)} className="w-full mt-1 p-4 bg-slate-50 rounded-2xl outline-none" placeholder="100" />
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">USA Price ($)</label>
+                <input required type="number" value={price} onChange={e => setPrice(e.target.value)} className="w-full mt-1 p-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="100"/>
               </div>
               <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Target Market</label>
-                <select value={country} onChange={e => setCountry(e.target.value)} className="w-full mt-1 p-4 bg-slate-50 rounded-2xl outline-none cursor-pointer">
-                  <option value="NG">Nigeria (NG)</option>
-                  <option value="IN">India (IN)</option>
-                  <option value="BR">Brazil (BR)</option>
-                  <option value="GB">United Kingdom (GB)</option>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Market</label>
+                <select value={country} onChange={e => setCountry(e.target.value)} className="w-full mt-1 p-4 bg-slate-50 border-none rounded-2xl outline-none cursor-pointer focus:ring-2 focus:ring-blue-500">
+                    <option value="NG">Nigeria (NG)</option>
+                    <option value="IN">India (IN)</option>
+                    <option value="BR">Brazil (BR)</option>
+                    <option value="GB">United Kingdom (GB)</option>
                 </select>
               </div>
             </div>
-            <button disabled={loading} className="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold text-lg hover:bg-blue-700 transition active:scale-95 flex items-center justify-center gap-2">
-              {loading ? "Analyzing..." : "Generate Strategy"} <ArrowRight size={20} />
+
+            <button disabled={loading} className="w-full bg-blue-600 text-white py-5 rounded-3xl font-bold text-lg hover:bg-blue-700 transition active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-blue-100 disabled:bg-slate-300">
+              {loading ? "Analyzing..." : "Optimize Global Price"} <ArrowRight size={20}/>
             </button>
           </form>
 
+          {/* DYNAMIC RESULT AREA */}
           <div className="space-y-6">
             {!result ? (
-              <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[2rem] p-12 text-center text-slate-400 min-h-[400px]">
-                <BarChart3 size={48} className="mb-4 opacity-20" />
-                <p>Generate a strategy to <br /> see localized results.</p>
+              <div className="h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center text-slate-300">
+                <BarChart3 size={48} className="mb-4 opacity-10"/>
+                <p className="font-bold text-slate-400">Generate a strategy to <br/> view localized results.</p>
               </div>
             ) : (
-              <div className="bg-slate-900 text-white p-8 rounded-[2rem] shadow-2xl animate-in fade-in slide-in-from-right-4 relative overflow-hidden">
-                <div className="flex items-center gap-2 text-blue-400 mb-6 font-bold text-sm tracking-widest uppercase"><Sparkles size={16} /> AI Strategy Ready</div>
-                <div className="mb-8">
-                  <p className="text-slate-400 text-sm mb-1 uppercase font-bold tracking-tighter">Recommended Local Price</p>
-                  <h3 className="text-4xl font-black">${result.suggestedPrice}</h3>
-                  <span className="inline-block mt-2 bg-green-500/20 text-green-400 text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-widest">{result.discountPercentage}% PPP Discount</span>
+              <div className="bg-slate-900 text-white p-8 rounded-[3rem] shadow-2xl animate-in fade-in slide-in-from-right-4 relative overflow-hidden">
+                <div className="flex items-center gap-2 text-blue-400 mb-6 font-bold text-sm tracking-widest uppercase">
+                  <Zap size={16} fill="currentColor"/> Strategy Complete
                 </div>
-                <div className="bg-white/5 p-6 rounded-2xl border border-white/10 mb-6 relative">
-                  <p className="text-blue-400 text-[10px] font-black uppercase mb-3 tracking-widest">AI Localized Pitch</p>
-                  <div className={!user?.isPro ? "blur-md select-none pointer-events-none" : ""}>
-                    <p className="italic text-lg leading-relaxed text-slate-200">"{result.localizedPitch}"</p>
+
+                <div className="mb-10">
+                  <p className="text-slate-400 text-xs uppercase font-black tracking-widest mb-1">Local Price for {country}</p>
+                  <h3 className="text-5xl font-black tracking-tighter">{result.localPriceFormatted || `$${result.suggestedPrice}`}</h3>
+                  <span className="inline-block mt-3 bg-green-500/20 text-green-400 text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest leading-none">
+                    {result.discountPercentage}% fair-market discount
+                  </span>
+                </div>
+
+                <div className="bg-white/5 p-6 rounded-3xl border border-white/10 mb-8 relative">
+                  <p className="text-blue-400 text-[10px] font-black uppercase mb-3 tracking-widest flex items-center gap-2"><Sparkles size={12}/> AI Marketing Pitch</p>
+                  
+                  {/* DYNAMIC BLUR LOGIC */}
+                  <div className={!user?.isPro ? "blur-lg select-none pointer-events-none opacity-50" : ""}>
+                    <p className="italic text-lg leading-relaxed text-slate-100 font-medium">
+                      "{result.localizedPitch}"
+                    </p>
                   </div>
+
                   {!user?.isPro && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900/40 rounded-2xl">
-                       <button onClick={handleUpgrade} className="bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg">Unlock with Pro</button>
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900/40 rounded-3xl">
+                      <button
+                        onClick={handleUpgrade}
+                        className="bg-blue-600 text-white px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 active:scale-95 transition-all">
+                          Unlock with Pro
+                      </button>
                     </div>
                   )}
                 </div>
+
+                <button 
+                  onClick={handleImplement}
+                  className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-100 transition active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-white/5">
+                  <CheckCircle2 size={18}/> Implement strategy
+                </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* WIDGET SECTION */}
+        {/* PRO FEATURE: WIDGET SECTION */}
         {result && user?.isPro && (
-          <div id="widget-section" className="mt-12 p-8 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-200 animate-in fade-in zoom-in">
-             <h4 className="text-xl font-black text-slate-900 mb-2">Website Widget</h4>
-             <p className="text-slate-500 mb-6 text-sm">Paste this into your site to show the local price automatically.</p>
-             <div className="bg-slate-900 p-6 rounded-2xl font-mono text-[10px] text-blue-300 overflow-x-auto">
-                {`<div id="price-parity-display"></div>\n<script src="${API_BASE}/widget?price=${price}"></script>`}
-             </div>
+          <div id="widget-section" className="mb-24 p-8 md:p-12 bg-white rounded-[3rem] border-2 border-dashed border-slate-100 animate-in slide-in-from-bottom-8 duration-700 shadow-2xl shadow-slate-100/50">
+            <h4 className="text-2xl font-black text-slate-800 mb-2">Automated Revenue Widget</h4>
+            <p className="text-slate-500 mb-8 max-w-lg">Copy and paste this script into your landing page. We will automatically detect visitor locations and display your optimized fair-market price.</p>
+            <div className="bg-slate-900 p-6 rounded-3xl font-mono text-[10px] md:text-xs text-blue-300 overflow-x-auto shadow-inner leading-relaxed">
+              {`<div id="price-parity-display"></div>\n<script src="${API_BASE}/widget?price=${price}"></script>`}
+            </div>
           </div>
         )}
 
-        {/* HISTORY SECTION */}
+        {/* PERSISTENT HISTORY SECTION */}
         {history.length > 0 && (
-          <div className="mt-32">
-            <h3 className="text-2xl font-black text-slate-800 mb-8 flex items-center gap-2">History</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {history.map((item) => (
-                <div key={item._id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                  <div className="flex justify-between items-start mb-4">
+          <div className="pt-24 border-t border-slate-100">
+            <div className="flex items-center justify-between mb-12">
+               <h3 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3"><Globe className="text-blue-600" /> Recent Optimizations</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {history.slice(0, 6).map((item) => (
+                <div key={item._id} className="bg-white p-7 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                  <div className="flex justify-between items-start mb-5">
                     <div>
-                      <h4 className="font-bold text-slate-800">{item.productName}</h4>
-                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">{item.country}</p>
+                      <h4 className="font-bold text-slate-800 line-clamp-1">{item.productName}</h4>
+                      <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">{item.country}</p>
                     </div>
                     <span className="bg-blue-50 text-blue-600 text-xs font-black px-3 py-1 rounded-full">${item.suggestedPrice}</span>
                   </div>
-                  <p className="text-sm text-slate-500 italic line-clamp-2">"{item.pitch}"</p>
+                  <p className="text-xs text-slate-400 leading-relaxed italic line-clamp-2">"{item.pitch}"</p>
                 </div>
               ))}
             </div>
           </div>
         )}
       </main>
+
+      <footer className="bg-white border-t border-slate-50 py-16 text-center">
+         <p className="text-slate-300 text-xs font-bold tracking-[0.3em] uppercase">FinanceFlow Global Revenue Optimization</p>
+      </footer>
     </div>
   );
 }
