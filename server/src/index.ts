@@ -37,7 +37,7 @@ app.post('/api/calculate', protect, async (req: any, res) => {
         const pricing = calculatePPPPrice(price, country);
 
         // 2. Logic Check: If they are Pro, give the real pitch. If not, give the "Upgrade" message.
-        let pitch = "Upgrade to Pro to unlock AI Marketing Pitches 🚀";
+        let pitch = "Upgrade to Pro to unlock AI Marketing Pitches";
         if (user.isPro) {
             pitch = await generateLocalizedPitch(productName, pricing.localPriceFormatted, country);
         }
