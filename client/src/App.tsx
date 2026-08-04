@@ -365,7 +365,7 @@ function App() {
       </main>
 
       <footer className="bg-white border-t border-slate-50 py-16 text-center">
-         <p className="text-slate-300 text-xs font-bold tracking-[0.3em] uppercase">FinanceFlow Global Revenue Optimization</p>
+         <p className="text-slate-300 text-xs font-bold tracking-[0.3em] uppercase">PriceParity Global Revenue Optimization</p>
       </footer>
     </div>
   );
