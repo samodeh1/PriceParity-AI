@@ -18,7 +18,7 @@ const app = express();
 app.use(cors());
 
 app.use(cors({
-    origin: ["https://priceparityai123.vercel.app", "http://localhost:5173"],
+    origin: ["https://priceparityai123vercelapp.vercel.app", "http://localhost:5173"],
     credentials: true
 }));
 app.use(express.json());
