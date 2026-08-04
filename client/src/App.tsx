@@ -85,22 +85,12 @@ function App() {
     const res = await axios.get(`${API_BASE}/auth/me`, {
       headers: { 'x-auth-token': currentToken }
     });
-
-    if (res.data) {
-      setUser(res.data);
-      console.log("Profile synced. Pro Status:", res.data.isPro);
-    }
+    if (res.data) setUser(res.data);
   } catch (err: any) {
-    console.error("Sync failed status:", err.response?.status);
-
-    // ONLY logout if the server specifically says the token is fake/expired (401)
-    if (err.response?.status === 401) {
-      toast.error("Session expired.");
-      handleLogout();
-    }
-    
-    // If it's a 404 or 500, we don't logout, 
-    // we just let the user stay on the page with limited data.
+    if (err.response?.status === 401) handleLogout();
+  } finally {
+    // THIS FIXES THE ERROR: It uses the function to stop the loading screen
+    setAuthLoading(false); 
   }
 };
 
@@ -116,6 +106,7 @@ function App() {
     setUser(userData);
     localStorage.setItem('parity_token', newToken);
     setIsAuthOpen(false);
+    setAuthLoading(false);
   };
 
   // --- 3. EFFECTS ---
@@ -174,9 +165,11 @@ function App() {
   }, [token]);
 
   if (token && authLoading) {
-  return <div className="min-h-screen flex items-center justify-center">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-  </div>;
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+    </div>
+  );
 }
 
   // --- 4. RENDER LOGIC ---
