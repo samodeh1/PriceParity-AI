@@ -4,4 +4,5 @@ export interface PricingResult {
     multiplier: number;
     productName: string;
     localizedPitch: string;
+    localPriceFormatted?: string;
 }
