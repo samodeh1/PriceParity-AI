@@ -11,8 +11,8 @@ export const initializePaystackPayment = async (email: string, amount: number, u
         PAYSTACK_URL,
         {
             email,
-            amount: amount * 100 * 1365.41, // $19 * 100 (cents) * 1600 (Current Naira Rate)
-            // Note: If you have a USD Paystack account, remove the 1600 multiplier.
+            amount: amount * 100 * 1362.27, // $10 * 100 (cents) * 1362.27 (Current Naira Rate)
+            // Note: If you have a USD Paystack account, remove the 1362.27 multiplier.
             callback_url: `${process.env.CLIENT_URL}/?paystack_success=true`,
             metadata: {
                 custom_fields: [
