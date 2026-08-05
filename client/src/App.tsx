@@ -22,7 +22,7 @@ function App() {
   const [history, setHistory] = useState<any[]>([]);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // --- LOGIC FUNCTIONS ---
+  // --- LOGIC HANDLERS ---
   const handleOptimize = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return setIsAuthOpen(true);
@@ -140,6 +140,80 @@ function App() {
     );
   }
 
+  // --- RENDER LANDING PAGE IF NOT LOGGED IN ---
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100 overflow-x-hidden">
+        <Toaster />
+        <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLogin={handleLoginSuccess} />
+        
+        {/* BACKGROUND DECORATION */}
+        <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
+          <div className="absolute top-[-5%] left-[-10%] w-[50%] h-[40%] bg-blue-50/50 rounded-full blur-[120px] animate-pulse"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-50/40 rounded-full blur-[100px]"></div>
+        </div>
+
+        {/* 1. NAVIGATION (Tighter) */}
+        <nav className="py-4 px-6 max-w-7xl mx-auto flex justify-between items-center sticky top-0 z-40 bg-white/60 backdrop-blur-md">
+          <div className="flex items-center gap-2 font-black text-2xl tracking-tighter uppercase italic">
+            <Globe className="text-blue-600" /> PRICE<span className="text-blue-600">PARITY</span>
+          </div>
+          <button onClick={() => setIsAuthOpen(true)} className="bg-slate-900 text-white px-6 py-2 rounded-full text-sm font-bold shadow-xl active:scale-95 transition-all">
+            Sign In
+          </button>
+        </nav>
+
+        {/* 2. HERO SECTION (Space Removed) */}
+        <section className="max-w-6xl mx-auto px-6 pt-10 pb-16 text-center">
+          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase mb-6">
+              <Sparkles size={12} fill="currentColor" /> AI-Powered Revenue Optimization
+            </div>
+            <h1 className="text-6xl md:text-8xl font-black text-slate-900 mb-6 leading-[0.9] tracking-tight">
+              One price does not <br /> <span className="text-blue-600">fit the world.</span>
+            </h1>
+            <p className="text-slate-500 text-xl md:text-2xl mb-10 max-w-2xl mx-auto leading-relaxed">
+              We use AI to help digital creators optimize pricing for local economies in 20+ countries.
+            </p>
+            <button onClick={() => setIsAuthOpen(true)} className="group bg-blue-600 text-white px-10 py-6 rounded-[2rem] font-black text-xl hover:bg-blue-700 shadow-2xl shadow-blue-300 transition-all active:scale-95 flex items-center gap-3 mx-auto uppercase tracking-tighter">
+              Get Started Free <ArrowRight className="group-hover:translate-x-1 transition-transform" />
+            </button>
+            <p className="mt-10 text-slate-400 text-xs font-bold uppercase tracking-[0.2em]">Trusted by Digital Creators Worldwide</p>
+          </motion.div>
+        </section>
+
+        {/* 3. FEATURES SECTION (Aligned & Tighter) */}
+        <section className="max-w-6xl mx-auto px-6 py-20 grid md:grid-cols-3 gap-12 md:gap-20 border-t border-slate-100">
+            {/* Column 1 - Moves Left on Desktop */}
+            <div className="space-y-4 flex flex-col items-center text-center md:items-start md:text-left">
+              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-sm border border-blue-100"><Zap size={24} fill="currentColor" /></div>
+              <h4 className="text-xl font-bold font-sans">1. PPP Intelligence</h4>
+              <p className="text-slate-500 text-sm leading-relaxed">We use global economic data to calculate the relative value of $1 in every economy automatically.</p>
+            </div>
+            
+            {/* Column 2 - Stays Centered */}
+            <div className="space-y-4 flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center shadow-sm border border-purple-100"><Sparkles size={24} fill="currentColor" /></div>
+              <h4 className="text-xl font-bold font-sans">2. Cultural AI</h4>
+              <p className="text-slate-500 text-sm leading-relaxed">Our AI rewrites your marketing pitch to match the cultural success triggers of that region.</p>
+            </div>
+            
+            {/* Column 3 - Moves Right on Desktop */}
+            <div className="space-y-4 flex flex-col items-center text-center md:items-end md:text-right">
+              <div className="w-12 h-12 bg-green-50 text-green-600 rounded-xl flex items-center justify-center shadow-sm border border-green-100"><ShieldCheck size={24} fill="currentColor" /></div>
+              <h4 className="text-xl font-bold font-sans">3. Global Checkout</h4>
+              <p className="text-slate-500 text-sm leading-relaxed">Monetize instantly using our secure, 1-line script for any website with zero maintenance.</p>
+            </div>
+        </section>
+
+        <footer className="py-12 text-center border-t border-slate-200 bg-white">
+           <p className="text-slate-300 text-[10px] font-black tracking-[0.4em] uppercase">© 2026 PriceParity AI | Samuel Odeh | All rights reserved. </p>
+        </footer>
+      </div>
+    );
+  }
+
+  // --- RENDER DASHBOARD VIEW IF LOGGED IN ---
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-blue-100">
       <Toaster />
@@ -150,142 +224,92 @@ function App() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-200/20 rounded-full blur-[100px]"></div>
       </div>
 
-      <nav className="p-6 max-w-7xl mx-auto flex justify-between items-center sticky top-0 z-40 bg-white/60 backdrop-blur-md">
-        <div className="flex items-center gap-2 font-black text-2xl tracking-tighter uppercase italic">
-          <Globe className="text-blue-600" /> Price<span className="text-blue-600">Parity</span>
+      <nav className="p-4 px-6 max-w-7xl mx-auto flex justify-between items-center sticky top-0 z-40 bg-white/60 backdrop-blur-md">
+        <div className="flex items-center gap-2 font-black text-2xl tracking-tighter">
+          <Globe className="text-blue-600" /> PRICE<span className="text-blue-600">PARITY</span>
         </div>
         <div className="flex items-center gap-4">
-          {token ? (
-            <div className="flex items-center gap-4 bg-white/80 p-1.5 pl-4 rounded-full border border-slate-200 shadow-sm">
-              <span className="text-xs font-black uppercase text-slate-500">{user?.username?.split(' ')[0]}</span>
-              <button onClick={handleLogout} className="bg-slate-900 text-white px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-red-500 transition-colors uppercase tracking-widest">Logout</button>
-            </div>
-          ) : (
-            <button onClick={() => setIsAuthOpen(true)} className="bg-slate-900 text-white px-6 py-2.5 rounded-full text-sm font-bold shadow-xl active:scale-95 transition-all tracking-tighter">Sign In</button>
+          {!user?.isPro && (
+            <button onClick={handleUpgrade} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition">Upgrade to Pro ($19)</button>
           )}
+          <div className="flex items-center gap-4 bg-white/80 p-1.5 pl-4 rounded-full border border-slate-200 shadow-sm">
+            <span className="text-xs font-black uppercase tracking-widest text-slate-500">{user?.username?.split(' ')[0]}</span>
+            <button onClick={handleLogout} className="bg-slate-900 text-white px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-red-500 transition-colors uppercase tracking-widest">Logout</button>
+          </div>
         </div>
       </nav>
 
-      {!token ? (
-        <>
-          <section className="max-w-6xl mx-auto px-6 py-32 text-center">
-            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-              <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase mb-8">
-                <Sparkles size={12} fill="currentColor" /> AI-Powered Revenue Optimization
+      <main className="max-w-6xl mx-auto px-6 py-10">
+        <div className="grid lg:grid-cols-5 gap-12 items-start mb-20">
+          
+          <motion.div className="lg:col-span-2 bg-white/70 backdrop-blur-xl border border-white p-8 rounded-[2.5rem] shadow-2xl space-y-8">
+            <h2 className="text-2xl font-black text-slate-800">Strategy Builder</h2>
+            <form onSubmit={handleOptimize} className="space-y-6">
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Product Title</label>
+                <input required value={productName} onChange={e => setProductName(e.target.value)} className="w-full mt-2 p-4 bg-slate-50 rounded-2xl outline-none" placeholder="Masterclass..." />
               </div>
-              <h1 className="text-6xl md:text-8xl font-black text-slate-900 mb-8 leading-[0.9] tracking-tight">
-                One price does not <br /> <span className="text-blue-600">fit the world.</span>
-              </h1>
-              <p className="text-slate-500 text-xl md:text-2xl mb-12 max-w-2xl mx-auto leading-relaxed">
-                Scale your SaaS or Course globally by pricing for every economy on Earth.
-              </p>
-              <button onClick={() => setIsAuthOpen(true)} className="group bg-blue-600 text-white px-10 py-6 rounded-[2rem] font-black text-xl hover:bg-blue-700 shadow-2xl shadow-blue-300 transition-all active:scale-95 flex items-center gap-3 mx-auto uppercase tracking-tighter">
-                Get Started Free <ArrowRight />
+              <div className="grid grid-cols-2 gap-4">
+                <input required type="number" value={price} onChange={e => setPrice(e.target.value)} className="p-4 bg-slate-50 rounded-2xl outline-none" placeholder="USD Price" />
+                <select value={country} onChange={e => setCountry(e.target.value)} className="p-4 bg-slate-50 rounded-2xl outline-none">
+                  <option value="NG">Nigeria</option>
+                  <option value="IN">India</option>
+                  <option value="BR">Brazil</option>
+                </select>
+              </div>
+              <button disabled={loading} className="w-full bg-blue-600 text-white py-5 rounded-3xl font-black text-sm uppercase hover:bg-blue-700 shadow-xl transition-all active:scale-95">
+                {loading ? "Generating..." : "Optimize Now"}
               </button>
-            </motion.div>
-          </section>
+            </form>
+          </motion.div>
 
-          <section className="max-w-6xl mx-auto px-6 py-24 grid md:grid-cols-3 gap-12 border-t border-slate-100">
-            <div className="space-y-4 flex flex-col items-center md:items-start text-center md:text-left">
-              <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center border border-blue-100 shadow-sm"><Zap size={24} fill="currentColor" /></div>
-              <h4 className="text-2xl font-black tracking-tight">1. PPP Intelligence</h4>
-              <p className="text-slate-500 text-sm">We automatically calculate fair prices based on local purchasing power.</p>
-            </div>
-            <div className="space-y-4 flex flex-col items-center text-center">
-              <div className="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center border border-purple-100 shadow-sm"><Sparkles size={24} fill="currentColor" /></div>
-              <h4 className="text-2xl font-black tracking-tight">2. Cultural AI</h4>
-              <p className="text-slate-500 text-sm">Our AI localized pitches use cultural triggers and local currency symbols.</p>
-            </div>
-            <div className="space-y-4 flex flex-col items-center md:items-end text-center md:text-right">
-              <div className="w-14 h-14 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center border border-green-100 shadow-sm"><ShieldCheck size={24} fill="currentColor" /></div>
-              <h4 className="text-2xl font-black tracking-tight">3. Global Checkout</h4>
-              <p className="text-slate-500 text-sm">Monetize instantly using our secure, 1-line script for any website.</p>
-            </div>
-          </section>
-        </>
-      ) : (
-        <main className="max-w-6xl mx-auto px-6 py-12">
-          <div className="grid lg:grid-cols-5 gap-12 items-start mb-24">
-            <motion.div className="lg:col-span-2 bg-white/70 backdrop-blur-xl border border-white p-8 rounded-[2.5rem] shadow-2xl space-y-8">
-              <h2 className="text-2xl font-black text-slate-800">Strategy Builder</h2>
-              <form onSubmit={handleOptimize} className="space-y-6">
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Product Title</label>
-                  <input required value={productName} onChange={e => setProductName(e.target.value)} className="w-full mt-2 p-4 bg-slate-50 rounded-2xl outline-none" placeholder="Masterclass..." />
+          <div className="lg:col-span-3">
+            <AnimatePresence mode="wait">
+              {!result ? (
+                <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[3rem] p-12 text-center text-slate-300 min-h-[450px]">
+                  <BarChart3 size={48} className="mb-4 opacity-10" />
+                  <p className="font-bold text-slate-400 text-xl tracking-tight">Run your first AI optimization <br /> to see results here.</p>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <input required type="number" value={price} onChange={e => setPrice(e.target.value)} className="p-4 bg-slate-50 rounded-2xl outline-none" placeholder="USD Price" />
-                  <select value={country} onChange={e => setCountry(e.target.value)} className="p-4 bg-slate-50 rounded-2xl outline-none">
-                    <option value="NG">Nigeria</option>
-                    <option value="IN">India</option>
-                    <option value="BR">Brazil</option>
-                  </select>
-                </div>
-                <button disabled={loading} className="w-full bg-blue-600 text-white py-5 rounded-3xl font-black text-sm uppercase hover:bg-blue-700 shadow-xl transition-all">
-                  {loading ? "Generating..." : "Optimize Now"}
-                </button>
-              </form>
-            </motion.div>
-
-            <div className="lg:col-span-3">
-              <AnimatePresence mode="wait">
-                {!result ? (
-                  <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[3rem] p-12 text-center text-slate-300 min-h-[450px]">
-                    <BarChart3 size={48} className="mb-4 opacity-10" />
-                    <p className="font-bold text-slate-400 text-xl tracking-tight">Run your first AI optimization <br /> to see results here.</p>
-                  </div>
-                ) : (
-                  <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-slate-900 text-white p-10 rounded-[3rem] shadow-2xl relative overflow-hidden">
-                    <div className="flex items-center gap-2 text-blue-400 mb-8 font-black text-xs tracking-widest uppercase"><Sparkles size={16} /> Result Generated</div>
-                    <h3 className="text-6xl font-black tracking-tighter mb-4 text-white">{result.localPriceFormatted || `$${result.suggestedPrice}`}</h3>
-                    <p className="text-slate-400 text-sm uppercase font-black mb-10 tracking-widest leading-none underline decoration-blue-600 underline-offset-8">Fair Price for {country}</p>
-                    
-                    <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 relative">
-                      <p className="text-blue-400 text-[10px] font-black uppercase mb-3 tracking-widest">Localized Pitch</p>
-                      <div className={!user?.isPro ? "blur-2xl select-none opacity-20 pointer-events-none" : ""}>
-                        <p className="italic text-xl text-slate-100 font-serif leading-relaxed">"{result.localizedPitch}"</p>
-                      </div>
-                      {!user?.isPro && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 rounded-[2rem]">
-                          <Lock className="text-blue-500 mb-3" size={20}/>
-                          <button onClick={handleUpgrade} className="bg-white text-slate-900 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-2xl hover:scale-105 transition-all">Unlock Pro AI Feature</button>
-                        </div>
-                      )}
+              ) : (
+                <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-slate-900 text-white p-10 rounded-[3rem] shadow-2xl relative overflow-hidden">
+                  <div className="flex items-center gap-2 text-blue-400 mb-8 font-black text-xs tracking-widest uppercase"><Sparkles size={16} /> Result Generated</div>
+                  <h3 className="text-6xl font-black tracking-tighter mb-4 text-white">{result.localPriceFormatted || `$${result.suggestedPrice}`}</h3>
+                  <p className="text-slate-400 text-sm uppercase font-black mb-10 tracking-widest leading-none underline decoration-blue-600 underline-offset-8">Fair Price for {country}</p>
+                  
+                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 relative">
+                    <p className="text-blue-400 text-[10px] font-black uppercase mb-3 tracking-widest">Localized Pitch</p>
+                    <div className={!user?.isPro ? "blur-2xl select-none opacity-20 pointer-events-none" : ""}>
+                      <p className="italic text-xl text-slate-100 font-serif leading-relaxed">"{result.localizedPitch}"</p>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                    {!user?.isPro && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 rounded-[2rem]">
+                        <Lock className="text-blue-500 mb-3" size={20}/>
+                        <button onClick={handleUpgrade} className="bg-white text-slate-900 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-2xl hover:scale-105 transition-all">Unlock Pro Features</button>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
+        </div>
 
-          {/* WIDGET PREVIEW */}
-          {result && user?.isPro && (
-            <div className="mb-24 p-8 md:p-12 bg-white rounded-[3rem] border-2 border-dashed border-slate-100 shadow-2xl shadow-slate-100/50">
-               <h4 className="text-2xl font-black text-slate-800 mb-2 tracking-tight uppercase italic underline decoration-blue-600 underline-offset-8">Production Widget</h4>
-               <p className="text-slate-500 mb-8 max-w-lg font-medium">Embed this into your site to automate local pricing based on IP.</p>
-               <div className="bg-slate-900 p-6 rounded-3xl font-mono text-[10px] text-blue-300 overflow-x-auto shadow-inner">
-                  {`<div id="price-parity-display"></div>\n<script src="${API_BASE}/widget?price=${price}"></script>`}
-               </div>
-            </div>
-          )}
+        {history.length > 0 && (
+          <div className="pt-20 border-t border-slate-200 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {history.slice(0, 6).map((h) => (
+              <div key={h._id} className="bg-white p-7 rounded-[2rem] border border-white shadow-xl shadow-slate-100">
+                <div className="flex justify-between mb-4"><h4 className="font-bold text-slate-800">{h.productName}</h4><span className="text-blue-600 font-black">${h.suggestedPrice}</span></div>
+                <p className="text-[10px] uppercase font-bold text-slate-400 mb-2">{h.country}</p>
+                <p className="text-xs text-slate-400 italic line-clamp-2">"{h.pitch}"</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
 
-          {history.length > 0 && (
-            <div className="pt-24 border-t border-slate-100 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {history.slice(0, 6).map((h) => (
-                <div key={h._id} className="bg-white p-7 rounded-[2rem] border border-white shadow-xl shadow-slate-100 transition-all hover:-translate-y-1">
-                  <div className="flex justify-between mb-4"><h4 className="font-bold text-slate-800">{h.productName}</h4><span className="text-blue-600 font-black">${h.suggestedPrice}</span></div>
-                  <p className="text-[10px] uppercase font-bold text-slate-400 mb-2">{h.country}</p>
-                  <p className="text-xs text-slate-400 italic line-clamp-2">"{h.pitch}"</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </main>
-      )}
-
-      <footer className="py-20 text-center border-t border-slate-200 bg-white">
+      <footer className="py-16 text-center border-t border-slate-200 bg-white">
          <Globe className="text-slate-200 mx-auto mb-4 opacity-50" size={32} />
-         <p className="text-slate-300 text-[10px] font-black tracking-[0.6em] uppercase">© 2026 PriceParity AI by Samuel Odeh. | System Architecture | All rights reserved. </p>
+         <p className="text-slate-300 text-[10px] font-black tracking-[0.6em] uppercase">© 2026 PriceParity AI by Design By Samuel Odeh. | Revenue Engineering |  All rights reserved.</p>
       </footer>
     </div>
   );
