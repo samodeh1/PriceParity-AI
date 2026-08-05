@@ -119,7 +119,7 @@ function App() {
           <button
             onClick={() => { toast.dismiss(t.id); handleUpgrade(); }}
             className="bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-bold shadow-lg shadow-blue-100 transition hover:bg-blue-700">
-              Upgrade to Pro ($19)
+              Upgrade to Pro ($10)
           </button>
         </span>
       ), { duration: 6000 });
@@ -141,7 +141,7 @@ function App() {
           const res = await axios.get(`${API_BASE}/paystack/verify?reference=${reference}`);
           if (res.data.isPro) {
             toast.dismiss(load);
-            toast.success("Welcome to Pro! 🚀");
+            toast.success("Welcome to Pro!");
             if (token) syncProfile(token);
           }
         } catch (err) {
