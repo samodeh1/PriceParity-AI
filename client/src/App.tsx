@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import axios from 'axios';
-import { Globe, Sparkles, ArrowRight, Zap, BarChart3, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { Globe, Sparkles, ArrowRight, Zap, BarChart3, CheckCircle2, ShieldCheck, Lock } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { PricingResult } from "./types";
 import { Auth } from "./components/Auth";
 
 // --- CONSTANTS ---
-const IDLE_TIMEOUT = 3 * 60 * 1000; 
+const IDLE_TIMEOUT = 15 * 60 * 1000; 
 const API_BASE = "https://priceparity-api-live.onrender.com/api";
 
 function App() {
@@ -23,36 +24,26 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
 
   // --- 2. LOGIC HANDLERS ---
-
   const handleOptimize = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return setIsAuthOpen(true);
-
     setLoading(true);
     try {
       const res = await axios.post(`${API_BASE}/calculate`, {
-        productName,
-        price: parseFloat(price),
-        country
-      }, {
-        headers: { 'x-auth-token': token }
-      });
+        productName, price: parseFloat(price), country
+      }, { headers: { 'x-auth-token': token } });
 
       setResult(res.data);
-      // Sync the Pro status from the calculation result immediately
       setUser((prev: any) => ({ ...prev, isPro: res.data.isPro }));
-      toast.success("Strategy generated!");
+      toast.success("Global strategy ready!");
       fetchHistory();
     } catch (err: any) {
-      toast.error("Failed to generate strategy");
-    } finally {
-      setLoading(false);
-    }
+      toast.error("Generation failed");
+    } finally { setLoading(false); }
   };
 
   const handleUpgrade = async () => {
-    if (!token) return setIsAuthOpen(true);
-    const loadingToast = toast.loading("Preparing secure checkout...");
+    const loadingToast = toast.loading("Connecting to secure gateway...");
     try {
       const res = await axios.post(`${API_BASE}/paystack/initialize`, {}, {
         headers: { 'x-auth-token': token }
@@ -60,8 +51,19 @@ function App() {
       window.location.href = res.data.authorization_url;
     } catch (err) {
       toast.dismiss(loadingToast);
-      toast.error("Payment system unavailable");
+      toast.error("Payment system offline");
     }
+  };
+
+  const syncProfile = async (currentToken: string) => {
+    try {
+      const res = await axios.get(`${API_BASE}/auth/me`, {
+        headers: { 'x-auth-token': currentToken }
+      });
+      if (res.data) setUser(res.data);
+    } catch (err: any) {
+      if (err.response?.status === 401) handleLogout();
+    } finally { setAuthLoading(false); }
   };
 
   const fetchHistory = async () => {
@@ -71,28 +73,7 @@ function App() {
         headers: { 'x-auth-token': token }
       });
       setHistory(res.data);
-    } catch (err) {
-      console.error("Could not fetch history");
-    }
-  };
-
-  const syncProfile = async (currentToken: string) => {
-    try {
-      const res = await axios.get(`${API_BASE}/auth/me`, {
-        headers: { 'x-auth-token': currentToken }
-      });
-      if (res.data) {
-        setUser(res.data);
-        console.log("Status Synced: isPro =", res.data.isPro);
-      }
-    } catch (err: any) {
-      console.error("Sync failed:", err.response?.status);
-      if (err.response?.status === 401) {
-        handleLogout();
-      }
-    } finally {
-      setAuthLoading(false);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const handleLogout = () => {
@@ -110,44 +91,21 @@ function App() {
     setAuthLoading(false);
   };
 
-  const handleImplement = () => {
-    if (!user?.isPro) {
-      toast((t) => (
-        <span className="flex flex-col gap-2 p-2">
-          <b className="text-slate-800">Pro Feature!</b>
-          <p className="text-xs text-slate-500">Unlock the AI Pitch and website widget to start selling globally.</p>
-          <button
-            onClick={() => { toast.dismiss(t.id); handleUpgrade(); }}
-            className="bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-bold shadow-lg shadow-blue-100 transition hover:bg-blue-700">
-              Upgrade to Pro ($10)
-          </button>
-        </span>
-      ), { duration: 6000 });
-    } else {
-      document.getElementById('widget-section')?.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   // --- 3. EFFECTS ---
-
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
     const reference = query.get('reference');
-
     if (query.get('paystack_success') && reference) {
       const verify = async () => {
-        const load = toast.loading("Confirming payment...");
+        const load = toast.loading("Verifying payment...");
         try {
           const res = await axios.get(`${API_BASE}/paystack/verify?reference=${reference}`);
           if (res.data.isPro) {
             toast.dismiss(load);
-            toast.success("Welcome to Pro!");
+            toast.success("Account Upgraded! 🚀");
             if (token) syncProfile(token);
           }
-        } catch (err) {
-          toast.dismiss(load);
-          toast.error("Verification failed.");
-        }
+        } catch (err) { toast.dismiss(load); }
       };
       verify();
       window.history.replaceState({}, '', window.location.pathname);
@@ -155,12 +113,8 @@ function App() {
   }, [token]);
 
   useEffect(() => {
-    if (token) {
-      syncProfile(token);
-      fetchHistory();
-    } else {
-      setAuthLoading(false);
-    }
+    if (token) { syncProfile(token); fetchHistory(); } 
+    else { setAuthLoading(false); }
   }, [token]);
 
   useEffect(() => {
@@ -168,10 +122,7 @@ function App() {
     let timer: number;
     const resetTimer = () => {
       if (timer) clearTimeout(timer);
-      timer = window.setTimeout(() => {
-        toast("Session expired.", { icon: '⏰' });
-        handleLogout();
-      }, IDLE_TIMEOUT);
+      timer = window.setTimeout(() => handleLogout(), IDLE_TIMEOUT);
     };
     const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
     events.forEach(e => window.addEventListener(e, resetTimer));
@@ -185,218 +136,160 @@ function App() {
   if (token && authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  // --- 4. RENDER LOGIC ---
-
-  if (!token) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center text-center p-6">
-        <Toaster />
-        <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLogin={handleLoginSuccess} />
-        
-        <div className="max-w-3xl">
-          <div className="flex justify-center items-center gap-2 font-black text-2xl tracking-tighter mb-8 text-slate-900">
-            <Globe className="text-blue-600" size={32}/>
-            PRICE<span className="text-blue-600">PARITY</span>
-          </div>
-
-          <h1 className="text-6xl font-black text-slate-900 mb-6 leading-tight tracking-tight">
-            The world is bigger than <span className="text-blue-600">just your country.</span>
-          </h1>
-          <p className="text-slate-500 text-xl mb-12 px-10 leading-relaxed">
-            Stop losing 80% of your global sales. Use AI to price your products fairly for every economy on Earth.
-          </p>
-
-          <button 
-            onClick={() => setIsAuthOpen(true)}
-            className="bg-blue-600 text-white px-10 py-5 rounded-3xl font-bold text-xl hover:bg-blue-700 shadow-2xl shadow-blue-200 transition-all active:scale-95 flex items-center gap-3 mx-auto">
-            Get Started for Free <ArrowRight/>
-          </button>
-
-          <p className="mt-12 text-slate-400 text-xs font-bold uppercase tracking-[0.2em]">Trusted by Digital Creators Worldwide</p>
-          
-        <section className="max-w-6xl mx-auto px-6 py-20 grid md:grid-cols-3 gap-12 md:gap-20 border-t border-slate-100">
-          {/* Column 1 - Moves Left on Desktop */}
-          <div className="space-y-4 flex flex-col items-center text-center md:items-start md:text-left">
-            <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center"><Zap /></div>
-            <h4 className="text-xl font-bold font-sans">1. PPP Intelligence</h4>
-            <p className="text-slate-500 text-sm">We use global economic data to calculate the relative value of $1 in every economy.</p>
-          </div>
-          
-          {/* Column 2 - Stays Centered */}
-          <div className="space-y-4 flex flex-col items-center text-center">
-            <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center"><Sparkles /></div>
-            <h4 className="text-xl font-bold font-sans">2. Cultural AI</h4>
-            <p className="text-slate-500 text-sm">Our AI rewrites your marketing pitch to match the cultural success triggers of that region.</p>
-          </div>
-          
-          {/* Column 3 - Moves Right on Desktop */}
-        <div className="space-y-4 flex flex-col items-center text-center md:items-end md:text-right">
-          <div className="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center"><ShieldCheck /></div>
-          <h4 className="text-xl font-bold font-sans">3. 1-Line Widget</h4>
-          <p className="text-slate-500 text-sm">Embed our simple script into your site to automate global pricing with zero maintenance.</p>
-        </div>
-      </section>
-
-
-          <button onClick={() => setIsAuthOpen(true)} className="bg-blue-600 text-white px-10 py-5 rounded-3xl font-bold text-xl hover:bg-blue-700 shadow-2xl shadow-blue-200 transition-all active:scale-95 flex items-center gap-3 mx-auto">
-            Get Started for Free <ArrowRight />
-          </button>
-        </div>
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafa] text-slate-900 font-sans">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans overflow-x-hidden selection:bg-blue-100">
       <Toaster />
       <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLogin={handleLoginSuccess} />
 
-      {/* DASHBOARD NAVBAR */}
-      <nav className="p-6 max-w-6xl mx-auto flex justify-between items-center bg-white/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="flex items-center gap-2 font-black text-xl tracking-tighter">
-          <Globe className="text-blue-600" />
-          PRICE<span className="text-blue-600">PARITY</span>
-        </div>
+      {/* --- PREMIUM BACKGROUND MESH --- */}
+      <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-200/40 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-200/30 rounded-full blur-[100px]"></div>
+      </div>
+
+      {/* --- NAVIGATION --- */}
+      <nav className="p-6 max-w-7xl mx-auto flex justify-between items-center sticky top-0 z-40 bg-white/60 backdrop-blur-md border-b border-white/20">
+        <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="flex items-center gap-2 font-black text-2xl tracking-tighter">
+          <Globe className="text-blue-600" /> PRICE<span className="text-blue-600">PARITY</span>
+        </motion.div>
+        
         <div className="flex items-center gap-6">
-          {!user?.isPro && (
-            <button onClick={handleUpgrade} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition">Upgrade to Pro ($10)</button>
+          {token ? (
+            <div className="flex items-center gap-4 bg-white/80 p-1.5 pl-4 rounded-full border border-slate-200 shadow-sm">
+              <span className="text-xs font-black uppercase tracking-widest text-slate-500">{user?.username?.split(' ')[0]}</span>
+              <button onClick={handleLogout} className="bg-slate-900 text-white px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-red-500 transition-colors uppercase">Logout</button>
+            </div>
+          ) : (
+            <button onClick={() => setIsAuthOpen(true)} className="bg-slate-900 text-white px-6 py-2.5 rounded-full text-sm font-bold shadow-xl active:scale-95 transition-all">Sign In</button>
           )}
-          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full border border-slate-100 shadow-sm">
-            <span className="text-sm font-bold text-slate-600 uppercase tracking-tighter">Hi, {user?.username?.split(' ')[0] || 'Member'}</span>
-            <button onClick={handleLogout} className="text-xs text-red-500 font-bold border-l pl-3 ml-1 border-slate-100 hover:text-red-700">Logout</button>
-          </div>
         </div>
       </nav>
 
-      <main className="max-w-5xl mx-auto px-6 py-12">
-        <div className="grid md:grid-cols-2 gap-12 items-start mb-24">
-          
-          {/* CALCULATOR FORM */}
-          <form onSubmit={handleOptimize} className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 space-y-6">
-            <h2 className="text-2xl font-black text-slate-800">New Strategy</h2>
-            <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Product Name</label>
-              <input required value={productName} onChange={e => setProductName(e.target.value)} className="w-full mt-1 p-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="e.g. Masterclass Course" />
+      {/* --- CONTENT GATEKEEPER --- */}
+      {!token ? (
+        <section className="max-w-6xl mx-auto px-6 py-32 text-center">
+          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase mb-8">
+              <Sparkles size={12} fill="currentColor" /> The Future of Global Sales
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">USA Price ($)</label>
-                <input required type="number" value={price} onChange={e => setPrice(e.target.value)} className="w-full mt-1 p-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="100"/>
-              </div>
-              <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Market</label>
-                <select value={country} onChange={e => setCountry(e.target.value)} className="w-full mt-1 p-4 bg-slate-50 border-none rounded-2xl outline-none cursor-pointer focus:ring-2 focus:ring-blue-500">
-                    <option value="NG">Nigeria (NG)</option>
-                    <option value="IN">India (IN)</option>
-                    <option value="BR">Brazil (BR)</option>
-                    <option value="GB">United Kingdom (GB)</option>
-                </select>
-              </div>
-            </div>
-
-            <button disabled={loading} className="w-full bg-blue-600 text-white py-5 rounded-3xl font-bold text-lg hover:bg-blue-700 transition active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-blue-100 disabled:bg-slate-300">
-              {loading ? "Analyzing..." : "Optimize Global Price"} <ArrowRight size={20}/>
+            <h1 className="text-6xl md:text-8xl font-black text-slate-900 mb-8 leading-[0.9] tracking-tight">
+              One price does not <br /> <span className="text-blue-600 text-glow">fit the world.</span>
+            </h1>
+            <p className="text-slate-500 text-xl md:text-2xl mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
+              We use AI to help digital creators optimize pricing for local economies in 20+ countries.
+            </p>
+            <button onClick={() => setIsAuthOpen(true)} className="group bg-blue-600 text-white px-10 py-6 rounded-[2rem] font-black text-xl hover:bg-blue-700 shadow-2xl shadow-blue-300 transition-all active:scale-95 flex items-center gap-3 mx-auto">
+              Get Free Access <ArrowRight className="group-hover:translate-x-1 transition-transform" />
             </button>
-          </form>
-
-          {/* DYNAMIC RESULT AREA */}
-          <div className="space-y-6">
-            {!result ? (
-              <div className="h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[2.5rem] p-12 text-center text-slate-300">
-                <BarChart3 size={48} className="mb-4 opacity-10"/>
-                <p className="font-bold text-slate-400">Generate a strategy to <br/> view localized results.</p>
+          </motion.div>
+        </section>
+      ) : (
+        <main className="max-w-6xl mx-auto px-6 py-12">
+          <div className="grid lg:grid-cols-5 gap-12 items-start">
+            
+            {/* CALCULATOR FORM */}
+            <motion.div layout className="lg:col-span-2 bg-white/70 backdrop-blur-xl border border-white p-8 rounded-[2.5rem] shadow-2xl shadow-slate-200/50 space-y-8">
+              <div>
+                <h2 className="text-2xl font-black text-slate-800 flex items-center gap-2"><Zap size={20} className="text-blue-600"/> Optimize</h2>
+                <p className="text-slate-400 text-xs mt-1 font-medium italic">Adjust price for global buying power.</p>
               </div>
-            ) : (
-              <div className="bg-slate-900 text-white p-8 rounded-[3rem] shadow-2xl animate-in fade-in slide-in-from-right-4 relative overflow-hidden">
-                <div className="flex items-center gap-2 text-blue-400 mb-6 font-bold text-sm tracking-widest uppercase">
-                  <Zap size={16} fill="currentColor"/> Strategy Complete
-                </div>
 
-                <div className="mb-10">
-                  <p className="text-slate-400 text-xs uppercase font-black tracking-widest mb-1">Local Price for {country}</p>
-                  <h3 className="text-5xl font-black tracking-tighter">{result.localPriceFormatted || `$${result.suggestedPrice}`}</h3>
-                  <span className="inline-block mt-3 bg-green-500/20 text-green-400 text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest leading-none">
-                    {result.discountPercentage}% fair-market discount
-                  </span>
+              <form onSubmit={handleOptimize} className="space-y-6">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Product Title</label>
+                  <input required value={productName} onChange={e => setProductName(e.target.value)} className="w-full mt-2 p-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Masterclass..." />
                 </div>
-
-                <div className="bg-white/5 p-6 rounded-3xl border border-white/10 mb-8 relative">
-                  <p className="text-blue-400 text-[10px] font-black uppercase mb-3 tracking-widest flex items-center gap-2"><Sparkles size={12}/> AI Marketing Pitch</p>
-                  
-                  {/* DYNAMIC BLUR LOGIC */}
-                  <div className={!user?.isPro ? "blur-lg select-none pointer-events-none opacity-50" : ""}>
-                    <p className="italic text-lg leading-relaxed text-slate-100 font-medium">
-                      "{result.localizedPitch}"
-                    </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">USA Price ($)</label>
+                    <input required type="number" value={price} onChange={e => setPrice(e.target.value)} className="w-full mt-2 p-4 bg-slate-50 border-none rounded-2xl outline-none" placeholder="100" />
                   </div>
-
-                  {!user?.isPro && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900/40 rounded-3xl">
-                      <button
-                        onClick={handleUpgrade}
-                        className="bg-blue-600 text-white px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 active:scale-95 transition-all">
-                          Unlock with Pro
-                      </button>
-                    </div>
-                  )}
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Market</label>
+                    <select value={country} onChange={e => setCountry(e.target.value)} className="w-full mt-2 p-4 bg-slate-50 border-none rounded-2xl outline-none cursor-pointer">
+                      <option value="NG">Nigeria (NG)</option>
+                      <option value="IN">India (IN)</option>
+                      <option value="BR">Brazil (BR)</option>
+                    </select>
+                  </div>
                 </div>
-
-                <button 
-                  onClick={handleImplement}
-                  className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-100 transition active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-white/5">
-                  <CheckCircle2 size={18}/> Implement strategy
+                <button disabled={loading} className="w-full bg-blue-600 text-white py-5 rounded-[1.8rem] font-black text-sm uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-100 transition-all active:scale-95 disabled:bg-slate-300">
+                  {loading ? "Calculating..." : "Generate AI Strategy"}
                 </button>
-              </div>
-            )}
-          </div>
-        </div>
+              </form>
+            </motion.div>
 
-        {/* PRO FEATURE: WIDGET SECTION */}
-        {result && user?.isPro && (
-          <div id="widget-section" className="mb-24 p-8 md:p-12 bg-white rounded-[3rem] border-2 border-dashed border-slate-100 animate-in slide-in-from-bottom-8 duration-700 shadow-2xl shadow-slate-100/50">
-            <h4 className="text-2xl font-black text-slate-800 mb-2">Automated Revenue Widget</h4>
-            <p className="text-slate-500 mb-8 max-w-lg">Copy and paste this script into your landing page. We will automatically detect visitor locations and display your optimized fair-market price.</p>
-            <div className="bg-slate-900 p-6 rounded-3xl font-mono text-[10px] md:text-xs text-blue-300 overflow-x-auto shadow-inner leading-relaxed">
-              {`<div id="price-parity-display"></div>\n<script src="${API_BASE}/widget?price=${price}"></script>`}
-            </div>
-          </div>
-        )}
-
-        {/* PERSISTENT HISTORY SECTION */}
-        {history.length > 0 && (
-          <div className="pt-24 border-t border-slate-100">
-            <div className="flex items-center justify-between mb-12">
-               <h3 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3"><Globe className="text-blue-600" /> Recent Optimizations</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {history.slice(0, 6).map((item) => (
-                <div key={item._id} className="bg-white p-7 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                  <div className="flex justify-between items-start mb-5">
-                    <div>
-                      <h4 className="font-bold text-slate-800 line-clamp-1">{item.productName}</h4>
-                      <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">{item.country}</p>
+            {/* DYNAMIC RESULT */}
+            <div className="lg:col-span-3">
+              <AnimatePresence mode="wait">
+                {!result ? (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[3rem] p-12 text-center text-slate-300 min-h-[450px]">
+                    <BarChart3 size={48} className="mb-4 opacity-10" />
+                    <p className="font-bold text-slate-400">Launch a new strategy to <br /> view localized analytics.</p>
+                  </motion.div>
+                ) : (
+                  <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-slate-900 text-white p-10 rounded-[3rem] shadow-2xl relative overflow-hidden ring-1 ring-white/10">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 blur-3xl rounded-full"></div>
+                    <div className="flex items-center gap-2 text-blue-400 mb-8 font-black text-xs tracking-[0.2em] uppercase"><Sparkles size={16} /> Strategy Generated</div>
+                    <div className="mb-10">
+                      <p className="text-slate-500 text-[10px] uppercase font-black tracking-widest mb-1">Local Price for {country}</p>
+                      <h3 className="text-6xl font-black tracking-tighter text-white">{result.localPriceFormatted || `$${result.suggestedPrice}`}</h3>
+                      <div className="mt-4 inline-flex items-center gap-2 bg-green-500/20 text-green-400 text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-widest">{result.discountPercentage}% fair-market discount</div>
                     </div>
-                    <span className="bg-blue-50 text-blue-600 text-xs font-black px-3 py-1 rounded-full">${item.suggestedPrice}</span>
-                  </div>
-                  <p className="text-xs text-slate-400 leading-relaxed italic line-clamp-2">"{item.pitch}"</p>
-                </div>
-              ))}
+
+                    <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 mb-8 relative group">
+                      <p className="text-blue-400 text-[10px] font-black uppercase mb-3 tracking-widest flex items-center gap-2">Cultural AI Pitch</p>
+                      <div className={!user?.isPro ? "blur-xl select-none pointer-events-none opacity-20 transition-all duration-1000" : ""}>
+                        <p className="italic text-xl text-slate-100 font-serif leading-relaxed">"{result.localizedPitch}"</p>
+                      </div>
+                      {!user?.isPro && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 rounded-[2rem]">
+                          <Lock className="text-blue-500 mb-3" size={20}/>
+                          <button onClick={handleUpgrade} className="bg-white text-slate-900 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-2xl hover:scale-105 transition-all">Unlock AI & Widget with Pro</button>
+                        </div>
+                      )}
+                    </div>
+                    <button className="w-full bg-white text-slate-900 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-lg hover:bg-slate-100 active:scale-95 transition-all">Copy Result</button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
-        )}
-      </main>
 
-      <footer className="bg-white border-t border-slate-50 py-16 text-center">
-         <p className="text-slate-300 text-xs font-bold tracking-[0.3em] uppercase">© 2026 PriceParity AI by Samuel Odeh. All rights reserved.</p>
+          {/* PERSISTENT HISTORY */}
+          {history.length > 0 && (
+            <div className="mt-32">
+              <h3 className="text-2xl font-black text-slate-800 mb-10 flex items-center gap-3">History</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-left">
+                {history.slice(0, 6).map((item) => (
+                  <motion.div whileHover={{ y: -10 }} key={item._id} className="bg-white p-7 rounded-[2.2rem] border border-white shadow-xl shadow-slate-200/50 group cursor-default transition-all duration-500">
+                    <div className="flex justify-between items-start mb-6">
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-lg group-hover:text-blue-600 transition-colors">{item.productName}</h4>
+                        <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">{item.country}</p>
+                      </div>
+                      <span className="bg-blue-50 text-blue-600 text-xs font-black px-4 py-1.5 rounded-full tracking-tighter">${item.suggestedPrice}</span>
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed italic line-clamp-2">"{item.pitch}"</p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+        </main>
+      )}
+
+      {/* FOOTER */}
+      <footer className="py-20 text-center border-t border-slate-200 bg-white mt-20">
+         <Globe className="text-slate-200 mx-auto mb-4" size={40} />
+         <p className="text-slate-400 text-xs font-bold tracking-[0.4em] uppercase ml-1">© 2026 PriceParity AI by Samuel Odeh. | Revenue Engineering | All rights reserved </p>
       </footer>
     </div>
-
   );
 }
 
