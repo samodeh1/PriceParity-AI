@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import axios from 'axios';
-import { Globe, Sparkles, ArrowRight, Zap, BarChart3, CheckCircle2, ShieldCheck, Lock } from 'lucide-react';
+import { Globe, Sparkles, ArrowRight, Zap, BarChart3, ShieldCheck, Lock } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PricingResult } from "./types";
 import { Auth } from "./components/Auth";
 
 // --- GLOBAL CONSTANTS ---
-const IDLE_TIMEOUT = 15 * 60 * 1000; 
+const IDLE_TIMEOUT = 3 * 60 * 1000; 
 const API_BASE = "https://priceparity-api-live.onrender.com/api";
 
 function App() {
