@@ -263,7 +263,7 @@ function App() {
         </div>
         <div className="flex items-center gap-6">
           {!user?.isPro && (
-            <button onClick={handleUpgrade} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition">Upgrade to Pro ($19)</button>
+            <button onClick={handleUpgrade} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition">Upgrade to Pro ($10)</button>
           )}
           <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full border border-slate-100 shadow-sm">
             <span className="text-sm font-bold text-slate-600 uppercase tracking-tighter">Hi, {user?.username?.split(' ')[0] || 'Member'}</span>
