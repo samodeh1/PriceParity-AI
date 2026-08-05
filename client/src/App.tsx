@@ -220,22 +220,28 @@ function App() {
           <p className="mt-12 text-slate-400 text-xs font-bold uppercase tracking-[0.2em]">Trusted by Digital Creators Worldwide</p>
           
           <section className="max-w-6xl mx-auto px-6 py-20 grid md:grid-cols-3 gap-12 border-t border-slate-100">
-          <div className="space-y-4">
-            <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center"><Zap /></div>
-            <h4 className="text-xl font-bold font-sans">1. PPP Intelligence</h4>
-            <p className="text-slate-500 text-sm">We use global economic data to calculate the relative value of $1 in every economy.</p>
-          </div>
-          <div className="space-y-4">
-            <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center"><Sparkles /></div>
-            <h4 className="text-xl font-bold font-sans">2. Cultural AI</h4>
-            <p className="text-slate-500 text-sm">Our AI rewrites your marketing pitch to match the cultural success triggers of that region.</p>
-          </div>
-          <div className="space-y-4">
-            <div className="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center"><ShieldCheck /></div>
-            <h4 className="text-xl font-bold font-sans">3. 1-Line Widget</h4>
-            <p className="text-slate-500 text-sm">Embed our simple script into your site to automate global pricing with zero maintenance.</p>
-          </div>
-        </section>
+            {/* Column 1 */}
+            <div className="space-y-4 flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center"><Zap /></div>
+              <h4 className="text-xl font-bold font-sans">1. PPP Intelligence</h4>
+              <p className="text-slate-500 text-sm">We use global economic data to calculate the relative value of $1 in every economy.</p>
+            </div>
+            
+            {/* Column 2 */}
+            <div className="space-y-4 flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center"><Sparkles /></div>
+              <h4 className="text-xl font-bold font-sans">2. Cultural AI</h4>
+              <p className="text-slate-500 text-sm">Our AI rewrites your marketing pitch to match the cultural success triggers of that region.</p>
+            </div>
+            
+            {/* Column 3 */}
+            <div className="space-y-4 flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center"><ShieldCheck /></div>
+              <h4 className="text-xl font-bold font-sans">3. 1-Line Widget</h4>
+              <p className="text-slate-500 text-sm">Embed our simple script into your site to automate global pricing with zero maintenance.</p>
+            </div>
+          </section>
+
           <button onClick={() => setIsAuthOpen(true)} className="bg-blue-600 text-white px-10 py-5 rounded-3xl font-bold text-xl hover:bg-blue-700 shadow-2xl shadow-blue-200 transition-all active:scale-95 flex items-center gap-3 mx-auto">
             Get Started for Free <ArrowRight />
           </button>
