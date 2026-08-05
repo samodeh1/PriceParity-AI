@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import axios from 'axios';
-import { protect } from '../middleware/authMiddleware';
+import { protect } from '../middleware/authMiddleware'; // Import the protect middleware(This was the missing part of the code that was causing the error of bluring the ai pitch after payment upgrade. It was not imported in the auth.ts file, so the /me route was not protected and was returning a 401 error. I added the import statement for the protect middleware and used it in the /me route to fix the issue.)
 
 const router = express.Router(); 
 
