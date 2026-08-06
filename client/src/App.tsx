@@ -90,6 +90,32 @@ function App() {
     setAuthLoading(false);
   };
 
+  const handleImplement = () => {
+    if (!user?.isPro) {
+      toast((t) => (
+        <span className="flex flex-col gap-2 p-2 text-left">
+          <b className="text-slate-800">Monthly Pro Plan</b>
+          <p className="text-[11px] text-slate-500 leading-tight">
+            Unlock premium AI localized pitches and your custom website widget for just $10/month.
+          </p>
+          <button
+            onClick={() => { 
+              toast.dismiss(t.id); 
+              handleUpgrade(); 
+            }}
+            className="bg-blue-600 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-blue-700 transition-all active:scale-95">
+              Start Subscription
+          </button>
+        </span>
+      ), { duration: 6000 });
+    } else {
+      // If they are already Pro, just scroll to the widget
+      document.getElementById('widget-section')?.scrollIntoView({
+        behavior: 'smooth'
+      });
+    }
+  };
+
   // --- PERSISTENCE & PAYMENT EFFECTS ---
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
@@ -110,32 +136,6 @@ function App() {
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, [token]);
-
-  const handleImplement = () => {
-    if (!user?.isPro) {
-      toast((t) => (
-        <span className="flex flex-col gap-2 p-2 text-left">
-          <b className="text-slate-800">Monthly Pro Plan</b>
-          <p className="text-[11px] text-slate-500 leading-tight">
-            Unlock premium AI localized pitches and your custom website widget for just $19/month.
-          </p>
-          <button
-            onClick={() => { 
-              toast.dismiss(t.id); 
-              handleUpgrade(); 
-            }}
-            className="bg-blue-600 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-blue-700 transition-all active:scale-95">
-              Start Subscription
-          </button>
-        </span>
-      ), { duration: 6000 });
-    } else {
-      // If they are already Pro, just scroll to the widget
-      document.getElementById('widget-section')?.scrollIntoView({
-        behavior: 'smooth'
-      });
-    }
-  };
 
   useEffect(() => {
     if (token) { syncProfile(token); fetchHistory(); } 
@@ -263,18 +263,19 @@ function App() {
           <Globe className="text-blue-600" /> <span className="text-blue-600"></span>
         </div>
         <div className="flex items-center gap-4">
+
           {!user?.isPro && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 rounded-[2rem]">
             <Lock className="text-blue-500 mb-3" size={20}/>
             <button 
-            onClick={handleUpgrade} 
-            className="bg-white text-slate-900 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-2xl hover:scale-105 transition-all"
-          >
-            Subscribe for $10/mo
-          </button>
-        </div>
+              onClick={handleImplement} 
+              className="bg-white text-slate-900 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-2xl hover:scale-105 transition-all"
+            >
+              Subscribe for $10/mo 
+            </button>
+          </div>
           )}
-          
+
           <div className="flex items-center gap-4 bg-white/80 p-1.5 pl-4 rounded-full border border-slate-200 shadow-sm">
             <span className="text-xs font-black uppercase tracking-widest text-slate-500">{user?.username?.split(' ')[0]}</span>
             <button onClick={handleLogout} className="bg-slate-900 text-white px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-red-500 transition-colors uppercase tracking-widest">Logout</button>
