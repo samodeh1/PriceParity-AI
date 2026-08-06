@@ -232,15 +232,14 @@ function App() {
 
       <nav className="p-4 px-6 max-w-7xl mx-auto flex justify-between items-center sticky top-0 z-40 bg-white/60 backdrop-blur-md">
         <div className="flex items-center gap-2 font-black text-2xl tracking-tighter">
-          <Globe className="text-blue-600" /> PRICE<span className="text-blue-600">PARITY</span>
+          <Globe className="text-blue-600" /> <span className="text-blue-600"></span>
         </div>
         <div className="flex items-center gap-4">
           {!user?.isPro && (
             <button onClick={handleUpgrade} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition">Go Pro ($10)</button>
           )}
-          <span className="text-xs font-black uppercase tracking-widest text-slate-500">{user?.username?.split(' ')[0]}</span>
           <div className="flex items-center gap-4 bg-white/80 p-1.5 pl-4 rounded-full border border-slate-200 shadow-sm">
-            
+            <span className="text-xs font-black uppercase tracking-widest text-slate-500">{user?.username?.split(' ')[0]}</span>
             <button onClick={handleLogout} className="bg-slate-900 text-white px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-red-500 transition-colors uppercase tracking-widest">Logout</button>
           </div>
         </div>
