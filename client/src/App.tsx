@@ -36,8 +36,8 @@ const SupportModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
           <div className="flex items-center gap-4 p-4 border border-slate-100 rounded-2xl cursor-not-allowed opacity-60 bg-slate-50">
             <div className="p-2 bg-purple-100 text-purple-600 rounded-lg"><MessageSquare size={20}/></div>
             <div>
-              <p className="text-sm font-bold text-slate-800">Live Chat</p>
-              <p className="text-xs text-slate-400">Coming soon for Pro members</p>
+              {/* <p className="text-sm font-bold text-slate-800">Live Chat</p>
+              <p className="text-xs text-slate-400">Coming soon for Pro members</p> */}
             </div>
           </div>
         </div>
