@@ -206,9 +206,9 @@ function App() {
             </div>
         </section>
 
-        <div className="space-y-4 flex flex-col items-center text-center -mt-4 (-16px)">
+        <div className="space-y-4 flex flex-col items-center text-center">
            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-            <button onClick={() => setIsAuthOpen(true)} className="group bg-blue-600 text-white px-10 py-6 rounded-[2rem] font-black text-xl hover:bg-blue-700 shadow-2xl shadow-blue-300 transition-all active:scale-95 flex items-center gap-3 mx-auto uppercase tracking-tighter">
+            <button onClick={() => setIsAuthOpen(true)} className="group bg-blue-600 text-white px-10 py-6 rounded-[2rem] -mt-4 (-16px) font-black text-xl hover:bg-blue-700 shadow-2xl shadow-blue-300 transition-all active:scale-95 flex items-center gap-3 mx-auto uppercase tracking-tighter">
               Get Started Free <ArrowRight className="group-hover:translate-x-1 transition-transform" />
             </button>
         </motion.div>
