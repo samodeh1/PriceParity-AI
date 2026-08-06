@@ -239,7 +239,7 @@ function App() {
             <button onClick={handleUpgrade} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition">Go Pro ($10)</button>
           )}
           <div className="flex items-center gap-4 bg-white/80 p-1.5 pl-4 rounded-full border border-slate-200 shadow-sm">
-            <span className="text-xs font-black uppercase tracking-widest text-slate-200">{user?.username?.split(' ')[0]}</span>
+            <span className="text-xs font-black uppercase tracking-widest text-slate-500">{user?.username?.split(' ')[0]}</span>
             <button onClick={handleLogout} className="bg-slate-900 text-white px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-red-500 transition-colors uppercase tracking-widest">Logout</button>
           </div>
         </div>
