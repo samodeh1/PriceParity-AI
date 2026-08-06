@@ -308,7 +308,7 @@ function App() {
       </main>
 
       <footer className="py-16 text-center border-t border-slate-100 bg-white">
-         <Globe className="text-slate-200 mx-auto mb-4 opacity-50" size={32} />
+         <Globe className="text-slate-100 mx-auto mb-4 opacity-50" size={32} />
          <p className="text-slate-300 text-[10px] font-black tracking-[0.6em] uppercase">© 2026 PriceParity AI by Design By Samuel Odeh. | All rights reserved.</p>
       </footer>
     </div>
