@@ -265,7 +265,7 @@ function App() {
         <div className="flex items-center gap-4">
 
           {!user?.isPro && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 rounded-[2rem]">
+            <div className="absolute inset-0 flex flex-col items-center justify-center ">
             <Lock className="text-blue-500 mb-3" size={20}/>
             <button 
               onClick={handleImplement} 
