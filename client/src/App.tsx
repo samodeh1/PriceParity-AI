@@ -204,13 +204,15 @@ function App() {
               <h4 className="text-xl font-bold font-sans">3. Global Checkout</h4>
               <p className="text-slate-500 text-sm leading-relaxed">Monetize instantly using our secure, 1-line script for any website with zero maintenance.</p>
             </div>
-        </section>
 
-        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+             <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
             <button onClick={() => setIsAuthOpen(true)} className="group bg-blue-600 text-white px-10 py-6 rounded-[2rem] font-black text-xl hover:bg-blue-700 shadow-2xl shadow-blue-300 transition-all active:scale-95 flex items-center gap-3 mx-auto uppercase tracking-tighter">
               Get Started Free <ArrowRight className="group-hover:translate-x-1 transition-transform" />
             </button>
         </motion.div>
+        </section>
+
+       
 
         <footer className="py-12 text-center border-t border-slate-100 bg-white">
            <p className="text-slate-300 text-[10px] font-black tracking-[0.4em] uppercase">© 2026 PriceParity AI Design By Samuel Odeh | All rights reserved. </p>
