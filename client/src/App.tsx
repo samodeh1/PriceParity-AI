@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, BarChart3, Globe, Lock, ShieldCheck, Sparkles, Zap, LifeBuoy, Mail, MessageSquare, CheckCircle2, DollarSign } from 'lucide-react';
+import { ArrowRight, BarChart3, Globe, Lock, ShieldCheck, Sparkles, Zap, LifeBuoy, Mail, MessageSquare } from 'lucide-react';
 import { useEffect, useState } from "react";
 import toast, { Toaster } from 'react-hot-toast';
 import { Auth } from "./components/Auth";
