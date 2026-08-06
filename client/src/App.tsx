@@ -206,8 +206,14 @@ function App() {
             </div>
         </section>
 
-        <footer className="py-12 text-center border-t border-slate-200 bg-white">
-           <p className="text-slate-300 text-[10px] font-black tracking-[0.4em] uppercase">© 2026 PriceParity AI | Samuel Odeh | All rights reserved. </p>
+        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+            <button onClick={() => setIsAuthOpen(true)} className="group bg-blue-600 text-white px-10 py-6 rounded-[2rem] font-black text-xl hover:bg-blue-700 shadow-2xl shadow-blue-300 transition-all active:scale-95 flex items-center gap-3 mx-auto uppercase tracking-tighter">
+              Get Started Free <ArrowRight className="group-hover:translate-x-1 transition-transform" />
+            </button>
+        </motion.div>
+
+        <footer className="py-12 text-center border-t border-slate-100 bg-white">
+           <p className="text-slate-300 text-[10px] font-black tracking-[0.4em] uppercase">© 2026 PriceParity AI Design By Samuel Odeh | All rights reserved. </p>
         </footer>
       </div>
     );
@@ -230,7 +236,7 @@ function App() {
         </div>
         <div className="flex items-center gap-4">
           {!user?.isPro && (
-            <button onClick={handleUpgrade} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition">Upgrade to Pro ($19)</button>
+            <button onClick={handleUpgrade} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition">Upgrade to Pro ($10)</button>
           )}
           <div className="flex items-center gap-4 bg-white/80 p-1.5 pl-4 rounded-full border border-slate-200 shadow-sm">
             <span className="text-xs font-black uppercase tracking-widest text-slate-500">{user?.username?.split(' ')[0]}</span>
@@ -308,8 +314,8 @@ function App() {
       </main>
 
       <footer className="py-16 text-center border-t border-slate-100 bg-white">
-         <Globe className="text-slate-100 mx-auto mb-4 opacity-50" size={32} />
-         <p className="text-slate-300 text-[10px] font-black tracking-[0.6em] uppercase">© 2026 PriceParity AI by Design By Samuel Odeh. | All rights reserved.</p>
+         <Globe className="text-slate-200 mx-auto mb-4 opacity-50" size={32} />
+         <p className="text-slate-300 text-[10px] font-black tracking-[0.6em] uppercase">© 2026 PriceParity AI Design By Samuel Odeh. | All rights reserved.</p>
       </footer>
     </div>
   );
