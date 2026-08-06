@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
 import axios from 'axios';
-import { Globe, Sparkles, ArrowRight, Zap, BarChart3, ShieldCheck, Lock } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowRight, BarChart3, Globe, Lock, ShieldCheck, Sparkles, Zap } from 'lucide-react';
+import { useEffect, useState } from "react";
 import toast, { Toaster } from 'react-hot-toast';
-import { motion, AnimatePresence } from 'framer-motion';
-import type { PricingResult } from "./types";
 import { Auth } from "./components/Auth";
+import type { PricingResult } from "./types";
 
 // --- GLOBAL CONSTANTS ---
 const IDLE_TIMEOUT = 3 * 60 * 1000; 
@@ -101,7 +101,7 @@ function App() {
           const res = await axios.get(`${API_BASE}/paystack/verify?reference=${reference}`);
           if (res.data.isPro) {
             toast.dismiss(load);
-            toast.success("Upgrade Successful! Welcome to Pro. 🚀");
+            toast.success("Upgrade Successful! Welcome to Pro. ");
             if (token) syncProfile(token);
           }
         } catch (err) { toast.dismiss(load); }
@@ -110,6 +110,32 @@ function App() {
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, [token]);
+
+  const handleImplement = () => {
+    if (!user?.isPro) {
+      toast((t) => (
+        <span className="flex flex-col gap-2 p-2 text-left">
+          <b className="text-slate-800">Monthly Pro Plan</b>
+          <p className="text-[11px] text-slate-500 leading-tight">
+            Unlock premium AI localized pitches and your custom website widget for just $19/month.
+          </p>
+          <button
+            onClick={() => { 
+              toast.dismiss(t.id); 
+              handleUpgrade(); 
+            }}
+            className="bg-blue-600 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-blue-700 transition-all active:scale-95">
+              Start Subscription
+          </button>
+        </span>
+      ), { duration: 6000 });
+    } else {
+      // If they are already Pro, just scroll to the widget
+      document.getElementById('widget-section')?.scrollIntoView({
+        behavior: 'smooth'
+      });
+    }
+  };
 
   useEffect(() => {
     if (token) { syncProfile(token); fetchHistory(); } 
@@ -208,7 +234,7 @@ function App() {
 
         <div className="space-y-4 flex flex-col items-center text-center">
            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-            <button onClick={() => setIsAuthOpen(true)} className="group bg-blue-600 text-white px-10 py-6 rounded-[2rem] -mt-4 (-16px) font-black text-xl hover:bg-blue-700 shadow-2xl shadow-blue-300 transition-all active:scale-95 flex items-center gap-3 mx-auto uppercase tracking-tighter">
+            <button onClick={() => setIsAuthOpen(true)} className="group bg-blue-600 text-white px-10 py-6 rounded-[2rem] font-black text-xl hover:bg-blue-700 shadow-2xl shadow-blue-300 transition-all active:scale-95 flex items-center gap-3 mx-auto uppercase tracking-tighter">
               Get Started Free <ArrowRight className="group-hover:translate-x-1 transition-transform" />
             </button>
         </motion.div>
@@ -238,8 +264,17 @@ function App() {
         </div>
         <div className="flex items-center gap-4">
           {!user?.isPro && (
-            <button onClick={handleUpgrade} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition">Go Pro ($10)</button>
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 rounded-[2rem]">
+            <Lock className="text-blue-500 mb-3" size={20}/>
+            <button 
+            onClick={handleUpgrade} 
+            className="bg-white text-slate-900 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-2xl hover:scale-105 transition-all"
+          >
+            Subscribe for $10/mo
+          </button>
+        </div>
           )}
+          
           <div className="flex items-center gap-4 bg-white/80 p-1.5 pl-4 rounded-full border border-slate-200 shadow-sm">
             <span className="text-xs font-black uppercase tracking-widest text-slate-500">{user?.username?.split(' ')[0]}</span>
             <button onClick={handleLogout} className="bg-slate-900 text-white px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-red-500 transition-colors uppercase tracking-widest">Logout</button>
