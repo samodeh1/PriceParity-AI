@@ -164,6 +164,12 @@ app.get('/api/paystack/verify', async (req, res) => {
     }
 });
 
+app.get('/api/paystack/manage', protect, async (req: any, res) => {
+    // This allows the user to update their card or cancel on Paystack's secure site
+    // You would typically redirect them to: https://dashboard.paystack.com/external/portal/CUSTOMER_CODE
+    res.json({ message: "Subscription management coming soon via Paystack Portal" });
+});
+
 app.post('/api/create-checkout-session', protect, async (req: any, res) => {
     try {
         const session = await createCheckoutSession(req.user.id);

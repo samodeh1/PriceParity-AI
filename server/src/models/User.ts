@@ -6,6 +6,8 @@ const UserSchema = new mongoose.Schema({
     password: { type: String },
     googleId: { type: String },
     isPro: { type: Boolean, default: false }, // Crucial for monetization
+    subscriptionId: { type: String }, 
+    customerCode: { type: String }, 
     createdAt: { type: Date, default: Date.now }
 });
 
