@@ -157,7 +157,7 @@ function App() {
           const res = await axios.get(`${API_BASE}/paystack/verify?reference=${reference}`);
           if (res.data.isPro) {
             toast.dismiss(load);
-            toast.success("Subscription Active! Welcome Pro. 🚀");
+            toast.success("Subscription Active! Welcome Pro. ");
             if (token) syncProfile(token);
           }
         } catch (err) { toast.dismiss(load); }
@@ -269,9 +269,10 @@ function App() {
               <button onClick={() => setIsHelpOpen(true)} className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-blue-600 transition-colors uppercase tracking-widest">
                 <LifeBuoy size={18} /> Support
               </button>
-              <a href="mailto:samuelodeh37@gmail.com" className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-blue-600 transition-colors uppercase tracking-widest">
+              {/* <a href="mailto:samuelodeh37@gmail.com" className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-blue-600 transition-colors uppercase tracking-widest">
                 <Mail size={18} /> Contact
-              </a>
+              </a> */}
+              <a href="mailto:samuelodeh37@gmail.com" className="flex items-center gap-4 p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all group"> Contact</a>
             </div>
             <SupportModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
           </div>
