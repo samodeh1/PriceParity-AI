@@ -392,19 +392,20 @@ function App() {
         )}
       </main>
 
-      <footer className="py-12 text-center border-t border-slate-200 bg-white mt-24">
-        <div className="flex justify-center gap-8 mb-6">
-           <button onClick={() => setIsHelpOpen(true)} className="flex items-center gap-2 text-xs font-black text-slate-400 hover:text-blue-600 transition-all tracking-[0.2em] uppercase">
-              <LifeBuoy size={16} /> Help
-           </button>
-           <a href="mailto:samuelodeh37@gmail.com" className="flex items-center gap-2 text-xs font-black text-slate-400 hover:text-blue-600 transition-all tracking-[0.2em] uppercase">
-              <Mail size={16} /> Contact
-           </a>
-        </div>
-        <p className="text-slate-300 text-[10px] font-black tracking-[0.6em] lowercase leading-relaxed max-w-sm mx-auto">
-          © 2026 PriceParity AI | Built By Samuel Odeh | All rights reserved. | <a href="https://www.richtec.com.ng" className="underline hover:text-blue-600 transition-colors">richtec.com.ng</a>
-        </p>
-      </footer>
+      <footer className="py-12 text-center border-t border-slate-100 bg-white">
+          <div className="flex flex-col items-center gap-4 mb-8">
+            <div className="flex items-center gap-6">
+              <button onClick={() => setIsHelpOpen(true)} className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-blue-600 transition-colors uppercase tracking-widest">
+                <LifeBuoy size={18} /> Support
+              </button>
+              <a href="mailto:samuelodeh37@gmail.com" className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-blue-600 transition-colors uppercase tracking-widest">
+                <Mail size={18} /> Contact
+              </a>
+            </div>
+            <SupportModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+          </div>
+          <p className="text-slate-300 text-[10px] font-black tracking-[0.4em] lowercase"> © 2026 PriceParity AI | Built By Samuel Odeh | All rights reserved. | <a href="https://www.richtec.com.ng" className="underline hover:text-blue-600 transition-colors">richtec.com.ng</a> </p>
+        </footer>
     </div>
   );
 }
