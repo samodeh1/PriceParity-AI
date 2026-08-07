@@ -36,8 +36,8 @@ const SupportModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
           <div className="flex items-center gap-4 p-4 border border-slate-100 rounded-2xl cursor-not-allowed opacity-60 bg-slate-50">
             <div className="p-2 bg-purple-100 text-purple-600 rounded-lg"><MessageSquare size={20}/></div>
             <div>
-              {/* <p className="text-sm font-bold text-slate-800">Live Chat</p>
-              <p className="text-xs text-slate-400">Coming soon for Pro members</p> */}
+              <p className="text-sm font-bold text-slate-800">Live Chat</p>
+              <p className="text-xs text-slate-400">Coming soon for Pro members</p>
             </div>
           </div>
         </div>
@@ -255,6 +255,14 @@ function App() {
             </div>
         </section>
 
+        <section className="max-w-6xl mx-auto px-6 pt-10 pb-16 text-center">
+          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+            <button onClick={() => setIsAuthOpen(true)} className="group bg-blue-600 text-white px-10 py-6 rounded-[2rem] font-black text-xl hover:bg-blue-700 shadow-2xl shadow-blue-300 transition-all active:scale-95 flex items-center gap-3 mx-auto uppercase tracking-tighter">
+              Get Started Free <ArrowRight className="group-hover:translate-x-1 transition-transform" />
+            </button>
+          </motion.div>
+        </section>
+
         <footer className="py-12 text-center border-t border-slate-100 bg-white">
           <div className="flex flex-col items-center gap-4 mb-8">
             <div className="flex items-center gap-6">
@@ -267,7 +275,7 @@ function App() {
             </div>
             <SupportModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
           </div>
-          <p className="text-slate-300 text-[10px] font-black tracking-[0.4em] uppercase"> © 2026 PriceParity AI | Revenue Systems | Built By Samuel Odeh(Richtech) | All rights reserved. | <a href="https://www.richtec.com.ng" className="underline hover:text-blue-600 transition-colors">richtec.com.ng</a> </p>
+          <p className="text-slate-300 text-[10px] font-black tracking-[0.4em] lowercase"> © 2026 PriceParity AI | Built By Samuel Odeh | All rights reserved. | <a href="https://www.richtec.com.ng" className="underline hover:text-blue-600 transition-colors">richtec.com.ng</a> </p>
         </footer>
       </div>
     );
@@ -393,8 +401,8 @@ function App() {
               <Mail size={16} /> Contact
            </a>
         </div>
-        <p className="text-slate-300 text-[10px] font-black tracking-[0.6em] uppercase leading-relaxed max-w-sm mx-auto">
-          © 2026 PriceParity AI | Revenue Systems | Built By Samuel Odeh(Richtec) | All rights reserved. | <a href="https://www.richtec.com.ng" className="underline hover:text-blue-600 transition-colors">richtec.com.ng</a>
+        <p className="text-slate-300 text-[10px] font-black tracking-[0.6em] lowercase leading-relaxed max-w-sm mx-auto">
+          © 2026 PriceParity AI | Built By Samuel Odeh | All rights reserved. | <a href="https://www.richtec.com.ng" className="underline hover:text-blue-600 transition-colors">richtec.com.ng</a>
         </p>
       </footer>
     </div>
