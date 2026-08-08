@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import { calculatePPPPrice } from './pricingEngine.js';
 import { generateLocalizedPitch } from './aiEngine.js';
 import requestIp from 'request-ip';
-// import { stripe, createCheckoutSession } from './stripe.js';
+import { getCountryList } from './pricingEngine.js';
 import mongoose from 'mongoose';
 import authRoutes from './routes/auth.js';
 import Strategy from './models/Strategy.js';
@@ -64,7 +64,6 @@ app.post('/api/calculate', protect, async (req: any, res) => {
     }
 });
 
-
 app.post('/api/paystack/initialize', protect, async (req: any, res) => {
     try {
         // 1. Get user from DB using the ID from the token
@@ -94,6 +93,11 @@ app.get('/api/strategies', protect, async (req: any, res) => {
     } catch (error) {
         res.status(500).json({ message: "Could not fetch history"});
     }
+});
+
+// Route for the frontend to get the searchable list of countries
+app.get('/api/countries', (req, res) => {
+    res.json(getCountryList());
 });
 
 // This route will be called by "Widget" on other people's websites
@@ -178,6 +182,7 @@ app.post('/api/create-checkout-session', protect, async (req: any, res) => {
         res.status(500).json({ error: "Could not create session" });
     }
 });
+
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI as string)
