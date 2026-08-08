@@ -16,19 +16,23 @@ const SupportModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 
    // New function to handle the laptop issue
   const handleEmailClick = (e: React.MouseEvent) => {
-    // 1. Copy the email to clipboard
-    e.preventDefault();
-    navigator.clipboard.writeText("samuelodeh37@gmail.com");
-    
-    // 2. Show a nice message
-    toast.success("Email address copied to clipboard!", {
-        icon: '📋',
-        duration: 4000
-    });
+  // 1. We keep e.preventDefault() so we can control the flow and satisfy TypeScript
+  e.preventDefault(); 
+  
+  // 2. Copy the email to clipboard (Backup)
+  navigator.clipboard.writeText("samuelodeh37@gmail.com");
+  
+  toast.success("Opening mailbox & email copied!", {
+      icon: '📩',
+      duration: 3000
+  });
 
-    // 3. Optional: Close the modal after a small delay
-    // (This allows the user to see the success message first)
-  };
+  // 3. Manually trigger the "mailto" after a tiny delay
+  // This is the part that will actually open the mailbox app on the laptop
+  setTimeout(() => {
+    window.location.href = "mailto:samuelodeh37@gmail.com";
+  }, 100);
+};
 
 
   return (
