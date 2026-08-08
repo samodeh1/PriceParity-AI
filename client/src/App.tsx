@@ -40,7 +40,7 @@ const SupportModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                   (window as any).Tawk_API.maximize();
                   onClose(); 
               } else {
-                  toast.error("Live chat is loading...");
+                  toast.error("Connecting to live support...");
               }
             }} 
             className="flex items-center gap-4 p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all group w-full text-left"
@@ -221,7 +221,9 @@ function App() {
     return (
       <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100 overflow-x-hidden">
         <Toaster />
+        <ChatWidget user={user} />
         <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLogin={handleLoginSuccess} />
+        <SupportModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
         
         <nav className="py-4 px-6 max-w-7xl mx-auto flex justify-between items-center sticky top-0 z-40 bg-white/60 backdrop-blur-md">
           <div className="flex items-center gap-2 font-black text-2xl tracking-tighter uppercase italic">
@@ -284,7 +286,7 @@ function App() {
             </div>
             <SupportModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
           </div>
-          <p className="text-slate-300 text-[10px] font-black tracking-[0.4em] uppercase"> © 2026 PriceParity AI | Samuel Odeh | Lead Developer <a href="https://www.richtec.com.ng" className="underline">richtec.com.ng</a></p>
+          <p className="text-slate-300 text-[10px] font-black tracking-[0.4em] uppercase"> © 2026 PriceParity AI | Built By Samuel Odeh | Lead Developer <a href="https://www.richtec.com.ng" className="underline">richtec.com.ng</a></p>
         </footer>
       </div>
     );
@@ -304,7 +306,7 @@ function App() {
         </div>
         <div className="flex items-center gap-4">
           {!user?.isPro && (
-            <button onClick={handleUpgrade} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition underline">Upgrade to Pro($10/mo)</button>
+            <button onClick={handleUpgrade} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition ">Upgrade to Pro($10/mo)</button>
           )}
           <div className="flex items-center gap-4 bg-white/80 p-1.5 pl-4 rounded-full border border-slate-200 shadow-sm">
             <span className="text-xs font-black uppercase text-slate-500">{user?.username?.split(' ')[0]}</span>
