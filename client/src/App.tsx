@@ -17,6 +17,7 @@ const SupportModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
    // New function to handle the laptop issue
   const handleEmailClick = (e: React.MouseEvent) => {
     // 1. Copy the email to clipboard
+    e.preventDefault();
     navigator.clipboard.writeText("samuelodeh37@gmail.com");
     
     // 2. Show a nice message
