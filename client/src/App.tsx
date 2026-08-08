@@ -23,7 +23,7 @@ const SupportModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
   navigator.clipboard.writeText("samuelodeh37@gmail.com");
   
   toast.success("Opening mailbox & email copied!", {
-      icon: '📩',
+      icon: '',
       duration: 3000
   });
 
