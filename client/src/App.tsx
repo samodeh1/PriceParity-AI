@@ -13,6 +13,23 @@ const API_BASE = "https://priceparity-api-live.onrender.com/api";
 
 const SupportModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   if (!isOpen) return null;
+
+   // New function to handle the laptop issue
+  const handleEmailClick = (e: React.MouseEvent) => {
+    // 1. Copy the email to clipboard
+    navigator.clipboard.writeText("samuelodeh37@gmail.com");
+    
+    // 2. Show a nice message
+    toast.success("Email address copied to clipboard!", {
+        icon: '📋',
+        duration: 4000
+    });
+
+    // 3. Optional: Close the modal after a small delay
+    // (This allows the user to see the success message first)
+  };
+
+
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[200] flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl relative border border-slate-100">
@@ -26,10 +43,12 @@ const SupportModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
         </div>
 
         <div className="space-y-4">
-          <a href="mailto:samuelodeh37@gmail.com" className="flex items-center gap-4 p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all group">
+          <a href="mailto:samuelodeh37@gmail.com" onClick={handleEmailClick} className="flex items-center gap-4 p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all group cursor-pointer">
             <div className="p-2 bg-blue-100 text-blue-600 rounded-lg group-hover:scale-110 transition"><Mail size={20}/></div>
             <div>
               <p className="text-sm font-bold text-slate-800">Email Support</p>
+              <p className="text-xs text-slate-400">samuelodeh37@gmail.com</p>
+              <p className="text-[10px] text-blue-500 font-medium mt-1">Click to send or copy</p>
               <p className="text-xs text-slate-400">Response within 24 hours</p>
             </div>
           </a>
