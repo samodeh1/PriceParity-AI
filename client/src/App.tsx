@@ -359,7 +359,32 @@ function App() {
           </div>
         </div>
 
-        {/* WIDGET & HISTORY SECTIONS REMOVED FOR BREVITY - RE-ADD IF NEEDED */}
+        {/* WIDGET SECTION */}
+        {result && user?.isPro && (
+          <div id="widget-section" className="mb-24 p-10 bg-white rounded-[3rem] border-2 border-dashed border-slate-100 shadow-2xl animate-in zoom-in">
+             <h4 className="text-2xl font-black text-slate-800 mb-2 uppercase italic underline decoration-blue-600 underline-offset-8">Website Widget</h4>
+             <p className="text-slate-500 mb-8 max-w-lg">Paste this code into your site to automate local pricing.</p>
+             <div className="bg-slate-900 p-6 rounded-3xl font-mono text-[10px] text-blue-300 overflow-x-auto shadow-inner leading-relaxed">
+                {`<div id="price-parity-display"></div>\n<script src="${API_BASE}/widget?price=${price}"></script>`}
+             </div>
+          </div>
+        )}
+
+        {/* HISTORY SECTION */}
+        {history.length > 0 && (
+          <div className="pt-16 border-t border-slate-200">
+             <h3 className="text-2xl font-black text-slate-800 mb-10">Previous Audits</h3>
+             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {history.slice(0, 6).map((h) => (
+                <div key={h._id} className="bg-white p-7 rounded-[2rem] border border-white shadow-xl shadow-slate-100 transition-all hover:-translate-y-1">
+                  <div className="flex justify-between mb-4"><h4 className="font-bold text-slate-800">{h.productName}</h4><span className="text-blue-600 font-black tracking-tighter">${h.suggestedPrice}</span></div>
+                  <p className="text-[10px] uppercase font-black text-slate-400 mb-2">{h.country}</p>
+                  <p className="text-xs text-slate-400 italic line-clamp-2 leading-relaxed">"{h.pitch}"</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
 
       <footer className="py-12 text-center border-t border-slate-100 bg-white">
