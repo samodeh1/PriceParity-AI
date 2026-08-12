@@ -3,15 +3,18 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const PAYSTACK_URL = "https://api.paystack.co/transaction/initialize";
-const SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+// Standardizing how we get the secret key
+const getSecretKey = () => process.env.PAYSTACK_SECRET_KEY || "";
 
 export const initializePaystackSubscription = async (email: string, planCode: string, userId: string) => {
+    // Pro Tip: This log will show up in your Render Logs so you can see if planCode is missing
+    console.log(`Paystack Init: Email=${email}, Plan=${planCode}, User=${userId}`);
+
     const res = await axios.post(
         "https://api.paystack.co/transaction/initialize",
         {
             email,
-            plan: planCode, // Paystack uses this to start a subscription automatically
+            plan: planCode, 
             callback_url: `${process.env.CLIENT_URL}/?paystack_success=true`,
             metadata: {
                 custom_fields: [
@@ -25,7 +28,7 @@ export const initializePaystackSubscription = async (email: string, planCode: st
         },
         {
             headers: {
-                Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+                Authorization: `Bearer ${getSecretKey()}`,
                 "Content-Type": "application/json"
             }
         }
@@ -33,12 +36,11 @@ export const initializePaystackSubscription = async (email: string, planCode: st
     return res.data.data;
 };
 
-// Function to verify payment
 export const verifyPaystackPayment = async (reference: string) => {
     const res = await axios.get(
         `https://api.paystack.co/transaction/verify/${reference}`,
         {
-            headers: { Authorization: `Bearer ${SECRET_KEY}` }
+            headers: { Authorization: `Bearer ${getSecretKey()}` }
         }
     );
     return res.data.data;
