@@ -9,15 +9,17 @@ const getSecretKey = () => process.env.PAYSTACK_SECRET_KEY || "";
 // server/src/paystack.ts
 
 export const initializePaystackSubscription = async (email: string, planCode: string, userId: string) => {
-    // Pro Debugging: This will show in Render logs to ensure planCode isn't empty
-    console.log(`Initializing Plan: ${planCode} for User: ${userId}`);
+    // 1. Determine the amount in Kobo based on the plan
+    // This ensures the amount sent always matches the plan rules
+    const amount = planCode === process.env.PAYSTACK_ANNUAL_PLAN 
+        ? 16000000  // ₦160,000 for Annual
+        : 1950000;  // ₦19,500 for Monthly
 
     const res = await axios.post(
         "https://api.paystack.co/transaction/initialize",
         {
             email,
-            // 1. We DELETED the 'amount' line. 
-            // Paystack will automatically charge whatever price you set on the dashboard for this Plan ID.
+            amount: amount, // ADDED BACK: Must be an integer in kobo
             plan: planCode, 
             callback_url: `${process.env.CLIENT_URL}/?paystack_success=true`,
             metadata: {
