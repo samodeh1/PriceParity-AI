@@ -11,8 +11,7 @@ import authRoutes from './routes/auth.js';
 import Strategy from './models/Strategy.js';
 import { protect } from './middleware/authMiddleware.js';
 import User from './models/User.js';
-import { initializePaystackPayment, verifyPaystackPayment } from './paystack.js';
-
+import { initializePaystackSubscription, verifyPaystackPayment } from './paystack.js';
 
 
 
@@ -81,11 +80,7 @@ app.post('/api/paystack/initialize', protect, async (req: any, res) => {
             : process.env.PAYSTACK_MONTHLY_PLAN;
 
         // 2. Pass the real email from the database
-        const paymentData = await initializePaystackPayment(
-            user.email,
-            planCode as string,  
-            user.id.toString()
-        );
+        const paymentData = await initializePaystackSubscription(user.email, planCode as string, user.id.toString());
         
         res.json(paymentData); 
     } catch (error) {
