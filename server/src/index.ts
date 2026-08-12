@@ -164,11 +164,6 @@ app.get('/api/widget', async (req, res) => {
          // 1. Get the price from the URL
         const originalPrice = Number(req.query.price);
 
-        // 1. Production-Grade IP Detection
-        // req.headers['x-forwarded-for'] is the standard for Render/Vercel
-        const clientIp = requestIp.getClientIp(req) || "";
-
-
         // 2. If the customer forgot the price, stop the script and show an error in console
         if (!originalPrice || isNaN(originalPrice)) {
             res.setHeader('Content-Type', 'application/javascript');
