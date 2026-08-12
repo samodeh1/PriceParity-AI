@@ -6,14 +6,12 @@ dotenv.config();
 const PAYSTACK_URL = "https://api.paystack.co/transaction/initialize";
 const SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
-export const initializePaystackPayment = async (email: string, amount: number, userId: string) => {
+export const initializePaystackSubscription = async (email: string, planCode: string, userId: string) => {
     const res = await axios.post(
-        PAYSTACK_URL,
+        "https://api.paystack.co/transaction/initialize",
         {
             email,
-            amount: amount * 100 * 1362.27, // $10 * 100 (cents) * 1362.27 (Current Naira Rate)
-            // Note: If you have a USD Paystack account, remove the 1362.27 multiplier.
-            plan: "PLN_9rgqpp10edtdpmy",
+            plan: planCode, // Paystack uses this to start a subscription automatically
             callback_url: `${process.env.CLIENT_URL}/?paystack_success=true`,
             metadata: {
                 custom_fields: [
@@ -27,12 +25,12 @@ export const initializePaystackPayment = async (email: string, amount: number, u
         },
         {
             headers: {
-                Authorization: `Bearer ${SECRET_KEY}`,
+                Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
                 "Content-Type": "application/json"
             }
         }
     );
-    return res.data.data; // This contains the 'authorization_url' and 'reference'
+    return res.data.data;
 };
 
 // Function to verify payment

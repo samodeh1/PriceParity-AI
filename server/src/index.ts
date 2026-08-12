@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { calculatePPPPrice } from './pricingEngine.js';
 import { generateLocalizedPitch } from './aiEngine.js';
 import requestIp from 'request-ip';
+import geoip from 'geoip-lite';
 import { getCountryList } from './pricingEngine.js';
 import mongoose from 'mongoose';
 import authRoutes from './routes/auth.js';
@@ -11,6 +12,8 @@ import Strategy from './models/Strategy.js';
 import { protect } from './middleware/authMiddleware.js';
 import User from './models/User.js';
 import { initializePaystackPayment, verifyPaystackPayment } from './paystack.js';
+
+
 
 
 dotenv.config();
@@ -68,18 +71,27 @@ app.post('/api/paystack/initialize', protect, async (req: any, res) => {
     try {
         // 1. Get user from DB using the ID from the token
         const user = await User.findById(req.user.id);
+        const { planType } = req.body; // Expects 'monthly' or 'annual'
         
-        if (!user || !user.email) {
-            return res.status(400).json({ error: "User email not found" });
-        }
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        // Logic to pick the right code from .env
+        const planCode = planType === 'annual' 
+            ? process.env.PAYSTACK_ANNUAL_PLAN 
+            : process.env.PAYSTACK_MONTHLY_PLAN;
 
         // 2. Pass the real email from the database
-        const paymentData = await initializePaystackPayment(user.email, 19, user.id.toString());
+        const paymentData = await initializePaystackPayment(
+            user.email,
+            planCode as string,  
+            user.id.toString()
+        );
         
         res.json(paymentData); 
     } catch (error) {
         console.error("Paystack Error:", error); // This helps you see the real error in the terminal
-        res.status(500).json({ error: "Paystack initialization failed" });
+        res.status(500).json({ error: "Subscription initialization failed"     
+        });
     }
 });
 
@@ -98,45 +110,6 @@ app.get('/api/strategies', protect, async (req: any, res) => {
 // Route for the frontend to get the searchable list of countries
 app.get('/api/countries', (req, res) => {
     res.json(getCountryList());
-});
-
-// This route will be called by "Widget" on other people's websites
-// 1. We use (req, res) as standard Express parameters
-app.get('/api/widget', async (req, res) => {
-    try {
-        // 2. We get the price from the URL (e.g. ?price=100)
-        const originalPrice = Number(req.query.price) || 0;
-
-        // 3. We use the library 'requestIp' (imported at the top) to get the IP from 'req'
-        const clientIp = requestIp.getClientIp(req);
-        
-        // In a real production server, we'd use a Geo-IP library here. 
-        // For now, let's keep the logic consistent.
-        const country = "NG"; 
-
-        const result = calculatePPPPrice(originalPrice, country);
-
-        // 4. CRUCIAL: We tell the browser this is a JavaScript file
-        res.setHeader('Content-Type', 'application/javascript');
-
-        // 5. Return the script
-        res.send(`
-            (function() {
-                const element = document.getElementById('price-parity-display');
-                if (element) {
-                    element.innerHTML = 'Special price for you in ${country}: <b>$${result.suggestedPrice}</b>';
-                    element.style.padding = '10px';
-                    element.style.background = '#f0f9ff';
-                    element.style.border = '1px solid #bae6fd';
-                    element.style.borderRadius = '8px';
-                    element.style.color = '#0369a1';
-                    element.style.display = 'inline-block';
-                }
-            })();
-        `);
-    } catch (error) {
-        res.status(500).send('console.error("PriceParity Widget Error");');
-    }
 });
 
 // 1. Ensure this route exists below your initialize route
@@ -183,6 +156,72 @@ app.post('/api/create-checkout-session', protect, async (req: any, res) => {
     }
 });
 
+// This route will be called by "Widget" on other people's websites
+// 1. We use (req, res) as standard Express parameters
+
+app.get('/api/widget', async (req, res) => {
+    try {
+         // 1. Get the price from the URL
+        const originalPrice = Number(req.query.price);
+
+        // 1. Production-Grade IP Detection
+        // req.headers['x-forwarded-for'] is the standard for Render/Vercel
+        const clientIp = requestIp.getClientIp(req) || "";
+
+
+        // 2. If the customer forgot the price, stop the script and show an error in console
+        if (!originalPrice || isNaN(originalPrice)) {
+            res.setHeader('Content-Type', 'application/javascript');
+            return res.send('console.error("PriceParity Error: No price provided in script URL");');
+        }
+
+        // 1. Get real IP address from headers (Works on Render/Production)
+        const forwarded = req.headers['x-forwarded-for'];
+        const clientIp = typeof forwarded === 'string' 
+            ? forwarded.split(',')[0] 
+            : req.socket.remoteAddress || "";
+
+        // 2. Lookup the country using GeoIP
+        const geo = geoip.lookup(clientIp);
+        
+        // 3. Fallback logic: If IP is local (testing) or not found, use a default
+        // For development testing, you can force 'NG' here if geo is null
+        const countryCode = geo ? geo.country : "US"; 
+
+        // --- TEST MODE FOR SAMUEL ---
+        // If you are on localhost, geo will be null.
+        // Add ?test_country=GB to your browser URL to test the UK, etc.
+        if (req.query.test_country) {
+            countryCode = String(req.query.test_country).toUpperCase();
+        }
+
+        const result = calculatePPPPrice(originalPrice, countryCode);
+
+        res.setHeader('Content-Type', 'application/javascript');
+        
+        // 4. Return the Dynamic Script with real data
+        res.send(`
+            (function() {
+                const element = document.getElementById('price-parity-display');
+                if (element) {
+                    element.innerHTML = ' Special Offer: Residents of ${result.countryName} pay only <b>${result.localPriceFormatted}</b>';
+                    element.style.display = 'inline-flex';
+                    element.style.alignItems = 'center';
+                    element.style.gap = '8px';
+                    element.style.background = 'rgba(37, 99, 235, 0.05)';
+                    element.style.color = '#2563eb';
+                    element.style.padding = '8px 16px';
+                    element.style.borderRadius = '99px';
+                    element.style.fontSize = '12px';
+                    element.style.fontWeight = '700';
+                    element.style.border = '1px solid rgba(37, 99, 235, 0.1)';
+                }
+            })();
+        `);
+    } catch (error) {
+        res.status(500).send('console.error("PriceParity Widget Load Failed");');
+    }
+});
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI as string)
