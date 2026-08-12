@@ -116,6 +116,7 @@ function App() {
 
   const handleUpgrade = async (type: 'monthly' | 'annual') => {
   const loading = toast.loading(`Preparing your ${type} subscription...`);
+  const loadingToast = toast.loading(`Connecting to Paystack for ${type} plan...`);
   try {
     const res = await axios.post(`${API_BASE}/paystack/initialize`, 
       { planType: type }, // Send the choice to backend
@@ -123,7 +124,7 @@ function App() {
     );
     window.location.href = res.data.authorization_url; 
   } catch (err) {
-    toast.dismiss(loading);
+    toast.dismiss(loadingToast);
     toast.error("Payment system unavailable");
   }
 };
