@@ -307,7 +307,7 @@ function App() {
         </div>
         <div className="flex items-center gap-4">
           {!user?.isPro && (
-            <button onClick={() => handleUpgrade('monthly')} className="text-xs font-black text-blue-600 uppercase tracking-widest hover:underline transition-all">Upgrade Pro</button>
+            <button onClick={() => handleImplement()} className="text-xs font-black text-blue-600 uppercase tracking-widest hover:underline transition-all">Upgrade Pro</button>
           )}
           <div className="flex items-center gap-4 bg-white/80 p-1.5 pl-4 rounded-full border border-slate-200 shadow-sm">
              <span className="text-[10px] font-black uppercase text-slate-500">{user?.username?.split(' ')[0]}</span>
