@@ -5,4 +5,5 @@ export interface PricingResult {
     productName: string;
     localizedPitch: string;
     localPriceFormatted?: string;
+    countryName?: string;
 }

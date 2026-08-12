@@ -11,17 +11,8 @@ import { ChatWidget } from './components/ChatWidget';
 const IDLE_TIMEOUT = 3 * 60 * 1000; 
 const API_BASE = "https://priceparity-api-live.onrender.com/api";
 
-const SupportModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+const SupportModal = ({ isOpen, onClose, onEmailClick }: { isOpen: boolean; onClose: () => void; onEmailClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) => {
   if (!isOpen) return null;
-
-  const handleEmailClick = (e: React.MouseEvent) => {
-    e.preventDefault(); 
-    navigator.clipboard.writeText("samuelodeh37@gmail.com");
-    toast.success("Opening mailbox & email copied!", { icon: '', duration: 3000 });
-    setTimeout(() => {
-      window.location.href = "mailto:samuelodeh37@gmail.com";
-    }, 100);
-  };
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[200] flex items-center justify-center p-4">
@@ -36,7 +27,7 @@ const SupportModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
         </div>
 
         <div className="space-y-4">
-          <a href="mailto:samuelodeh37@gmail.com" onClick={handleEmailClick} className="flex items-center gap-4 p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all group w-full text-left">
+          <a href="mailto:samuelodeh37@gmail.com" onClick={onEmailClick} className="flex items-center gap-4 p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all group w-full text-left">
             <div className="p-2 bg-blue-100 text-blue-600 rounded-lg group-hover:scale-110 transition"><Mail size={20}/></div>
             <div>
               <p className="text-sm font-bold text-slate-800">Email Support</p>
@@ -126,6 +117,15 @@ function App() {
       const res = await axios.get(`${API_BASE}/strategies`, { headers: { 'x-auth-token': token } });
       setHistory(res.data);
     } catch (err) { console.error(err); }
+  };
+
+  const handleEmailClick = (e: React.MouseEvent) => {
+    e.preventDefault(); 
+    navigator.clipboard.writeText("samuelodeh37@gmail.com");
+    toast.success("Opening mailbox & email copied!", { icon: '', duration: 3000 });
+    setTimeout(() => {
+      window.location.href = "mailto:samuelodeh37@gmail.com";
+    }, 100);
   };
 
   const handleLogout = () => {
@@ -224,7 +224,7 @@ function App() {
         <Toaster />
         <ChatWidget user={user} />
         <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLogin={handleLoginSuccess} />
-        <SupportModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+        <SupportModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} onEmailClick={handleEmailClick} />
         
         <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
           <div className="absolute top-[-5%] left-[-10%] w-[50%] h-[40%] bg-blue-50/50 rounded-full blur-[120px] animate-pulse"></div>
@@ -281,7 +281,7 @@ function App() {
             <button onClick={() => setIsHelpOpen(true)} className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-blue-600 transition-all uppercase tracking-widest"><LifeBuoy size={16} /> Help</button>
             <a href="mailto:samuelodeh37@gmail.com" onClick={handleEmailClick} className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-blue-600 transition-all uppercase tracking-widest"><Mail size={16} /> Contact</a>
           </div>
-          <SupportModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+          <SupportModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} onEmailClick={handleEmailClick} />
           <p className="text-slate-300 text-[10px] font-black uppercase tracking-[0.6em]">© 2026 PriceParity AI | Built By Samuel Odeh | <a href="https://www.richtec.com.ng" className="underline hover:text-blue-600">RichTec</a></p>
         </footer>
       </div>
@@ -294,7 +294,7 @@ function App() {
       <Toaster />
       <ChatWidget user={user} />
       <Auth isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLogin={handleLoginSuccess} />
-      <SupportModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+      <SupportModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} onEmailClick={handleEmailClick}/>
 
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-100/30 rounded-full blur-[120px] animate-pulse"></div>
@@ -303,7 +303,7 @@ function App() {
 
       <nav className="py-4 px-6 max-w-7xl mx-auto flex justify-between items-center sticky top-0 z-40 bg-white/60 backdrop-blur-md">
         <div className="flex items-center gap-2 font-black text-2xl tracking-tighter uppercase italic">
-          <Globe className="text-blue-600" /> PRICE<span className="text-blue-600">PARITY</span>
+          <Globe className="text-blue-600" /> <span className="text-blue-600"></span>
         </div>
         <div className="flex items-center gap-4">
           {!user?.isPro && (
