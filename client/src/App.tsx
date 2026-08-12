@@ -114,18 +114,60 @@ function App() {
     finally { setLoading(false); }
   };
 
-  const handleUpgrade = async () => {
-    const loadingToast = toast.loading("Connecting to Paystack...");
-    try {
-      const res = await axios.post(`${API_BASE}/paystack/initialize`, {}, {
-        headers: { 'x-auth-token': token }
-      });
-      window.location.href = res.data.authorization_url;
-    } catch (err) {
-      toast.dismiss(loadingToast);
-      toast.error("Payment system offline");
-    }
-  };
+  const handleUpgrade = async (type: 'monthly' | 'annual') => {
+  const loading = toast.loading(`Preparing your ${type} subscription...`);
+  try {
+    const res = await axios.post(`${API_BASE}/paystack/initialize`, 
+      { planType: type }, // Send the choice to backend
+      { headers: { 'x-auth-token': token } }
+    );
+    window.location.href = res.data.authorization_url; 
+  } catch (err) {
+    toast.dismiss(loading);
+    toast.error("Payment system unavailable");
+  }
+};
+
+const handleImplement = () => {
+  if (!user?.isPro) {
+    toast((t) => (
+      <div className="flex flex-col gap-4 p-4 text-left max-w-xs">
+        <div>
+          <b className="text-slate-900 text-lg">Select Your Plan</b>
+          <p className="text-[11px] text-slate-500 mt-1">Join 5,000+ creators scaling globally.</p>
+        </div>
+
+        <div className="space-y-3">
+          {/* Monthly Option */}
+          <button 
+            onClick={() => { toast.dismiss(t.id); handleUpgrade('monthly'); }}
+            className="w-full p-4 border border-slate-100 rounded-2xl flex justify-between items-center hover:border-blue-600 transition-all bg-slate-50 group"
+          >
+            <div className="text-left">
+               <p className="text-[10px] font-black uppercase text-slate-400 group-hover:text-blue-600">Monthly</p>
+               <p className="font-bold text-slate-800">$12/mo</p>
+            </div>
+            <ArrowRight size={16} className="text-slate-300 group-hover:text-blue-600" />
+          </button>
+
+          {/* Annual Option */}
+          <button 
+            onClick={() => { toast.dismiss(t.id); handleUpgrade('annual'); }}
+            className="w-full p-4 border-2 border-blue-600 rounded-2xl flex justify-between items-center bg-blue-50 group shadow-lg shadow-blue-100"
+          >
+            <div className="text-left">
+               <p className="text-[10px] font-black uppercase text-blue-600">Annual (Save 30%)</p>
+               <p className="font-bold text-slate-800">$99/yr</p>
+            </div>
+            <div className="bg-blue-600 text-white p-1 rounded-full"><Zap size={12} fill="currentColor" /></div>
+          </button>
+        </div>
+      </div>
+    ), { duration: 10000 });
+  } else {
+    document.getElementById('widget-section')?.scrollIntoView({ behavior: 'smooth' });
+  }
+};
 
   const syncProfile = async (currentToken: string) => {
     try {
@@ -163,22 +205,21 @@ function App() {
     setAuthLoading(false);
   };
 
-  const handleImplement = () => {
-    if (!user?.isPro) {
-      toast((t) => (
-        <span className="flex flex-col gap-2 p-2">
-          <b>Pro Feature!</b>
-          Unlock AI tools and website widgets to start selling.
-          <button onClick={() => { toast.dismiss(t.id); handleUpgrade(); }}
-            className="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-bold transition hover:bg-blue-700">
-              Upgrade Now
-          </button>
-        </span>
-      ), { duration: 6000 });
-    } else {
-      document.getElementById('widget-section')?.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  toast((t) => (
+  <span className="flex flex-col gap-2 p-2 text-left">
+    <b className="text-slate-800 text-lg">Pro Membership </b>
+    <ul className="text-[11px] text-slate-500 space-y-1 mb-2">
+      <li className="flex items-center gap-1">✅ <b>Unlimited</b> AI Marketing Pitches</li>
+      <li className="flex items-center gap-1">✅ <b>Full</b> Website Widget Access</li>
+      <li className="flex items-center gap-1">✅ <b>Priority</b> 24/7 Developer Support</li>
+    </ul>
+    <button
+      onClick={() => { toast.dismiss(t.id); handleUpgrade(); }}
+      className="bg-blue-600 text-white py-3 rounded-xl font-bold uppercase tracking-widest shadow-lg hover:bg-blue-700 transition-all active:scale-95">
+        Get Unlimited Access — $12/mo
+    </button>
+  </span>
+), { duration: 8000 });
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -201,7 +242,7 @@ function App() {
           const res = await axios.get(`${API_BASE}/paystack/verify?reference=${ref}`);
           if (res.data.isPro) {
             toast.dismiss(load);
-            toast.success("Subscription Active! Welcome Pro. 🚀");
+            toast.success("Subscription Active! Welcome Pro. ");
             if (token) syncProfile(token);
           }
         } catch (err) { toast.dismiss(load); }
@@ -239,6 +280,26 @@ function App() {
       </div>
     );
   }
+// --- LANDING PAGE WIDGET INJECTION ---
+  useEffect(() => {
+    if (!token) {
+      // 1. Grab any test country from your browser URL (e.g. ?test_country=GB)
+      const urlParams = new URLSearchParams(window.location.search);
+      const testCountry = urlParams.get('test_country') || '';
+
+      const script = document.createElement("script");
+      // 2. Pass the price (12) and the test flag to your server
+      script.src = `${API_BASE}/widget?price=12&test_country=${testCountry}`; 
+      script.async = true;
+      document.body.appendChild(script);
+      
+      return () => {
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+      };
+    }
+  }, [token]);
 
   // --- LANDING PAGE ---
   if (!token) {
@@ -330,7 +391,7 @@ function App() {
         </div>
         <div className="flex items-center gap-4">
           {!user?.isPro && (
-            <button onClick={handleUpgrade} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition ">Upgrade to Pro($10/mo)</button>
+            <button onClick={() => handleUpgrade('monthly')} className="text-sm font-bold text-blue-600 hover:text-blue-800 transition ">Upgrade to Pro($12/mo)</button>
           )}
           <div className="flex items-center gap-4 bg-white/80 p-1.5 pl-4 rounded-full border border-slate-200 shadow-sm">
             <span className="text-xs font-black uppercase text-slate-500">{user?.username?.split(' ')[0]}</span>
@@ -375,7 +436,7 @@ function App() {
                     <p className="text-blue-400 text-[10px] font-black uppercase mb-3 flex items-center gap-2"><Sparkles size={12}/> Localized Pitch</p>
                     <div className={!user?.isPro ? "blur-2xl select-none opacity-20 pointer-events-none" : ""}><p className="italic text-xl font-serif">"{result.localizedPitch}"</p></div>
                     {!user?.isPro && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 rounded-[2rem]"><Lock className="text-blue-500 mb-3" size={20}/><button onClick={handleUpgrade} className="bg-white text-slate-900 px-6 py-2.5 rounded-full text-[10px] font-black uppercase shadow-2xl">Subscribe for $10/mo</button></div>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 rounded-[2rem]"><Lock className="text-blue-500 mb-3" size={20}/><button onClick={() => handleUpgrade('monthly')} className="bg-white text-slate-900 px-6 py-2.5 rounded-full text-[10px] font-black uppercase shadow-2xl">Subscribe for $12/mo</button></div>
                     )}
                   </div>
                   <button onClick={handleImplement} className="w-full bg-white text-slate-900 py-5 rounded-[1.5rem] font-black text-xs uppercase shadow-lg transition-all active:scale-95 mt-4">Implement Strategy</button>
@@ -383,16 +444,43 @@ function App() {
               )}
             </AnimatePresence>
           </div>
+
+          <div className="grid grid-cols-2 gap-4 mt-8">
+            <div className="bg-white p-6 rounded-3xl border border-slate-100 text-center">
+              <p className="text-xs font-bold text-slate-400 uppercase">Monthly</p>
+              <h4 className="text-xl font-black">$12<span className="text-xs">/mo</span></h4>
+              <button onClick={() => handleUpgrade('monthly')} className="mt-4 w-full py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">Choose Monthly</button>
+            </div>
+
+            <div className="bg-blue-600 p-6 rounded-3xl text-white text-center shadow-xl shadow-blue-100">
+              <p className="text-xs font-bold opacity-80 uppercase">Annual (Save 30%)</p>
+              <h4 className="text-xl font-black">$99<span className="text-xs">/yr</span></h4>
+              <button onClick={() => handleUpgrade('annual')} className="mt-4 w-full py-2 bg-white text-blue-600 rounded-xl text-xs font-bold">Choose Annual</button>
+            </div>
+          </div>
         </div>
 
         {/* WIDGET SECTION */}
         {result && user?.isPro && (
           <div id="widget-section" className="mb-24 p-10 bg-white rounded-[3rem] border-2 border-dashed border-slate-100 shadow-2xl animate-in zoom-in">
-             <h4 className="text-2xl font-black text-slate-800 mb-2 uppercase italic underline decoration-blue-600 underline-offset-8">Website Widget</h4>
+             <h4 className="text-2xl font-black text-slate-800 mb-2 uppercase italic underline decoration-blue-600 underline-offset-8">Your Website Widget</h4>
              <p className="text-slate-500 mb-8 max-w-lg">Paste this code into your site to automate local pricing.</p>
              <div className="bg-slate-900 p-6 rounded-3xl font-mono text-[10px] text-blue-300 overflow-x-auto shadow-inner leading-relaxed">
+              {/* 
+                WE USE THE 'price' VARIABLE FROM THE INPUT BOX 
+                This ensures the widget they copy matches their product price! 
+              */}
                 {`<div id="price-parity-display"></div>\n<script src="${API_BASE}/widget?price=${price}"></script>`}
              </div>
+               <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(`<div id="price-parity-display"></div>\n<script src="${API_BASE}/widget?price=${price}"></script>`);
+                  toast.success("Widget code copied!");
+                }}
+                className="..."
+              >
+                Copy Code
+              </button>
           </div>
         )}
 
