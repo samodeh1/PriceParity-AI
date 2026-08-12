@@ -114,9 +114,8 @@ function App() {
     finally { setLoading(false); }
   };
 
-  const handleUpgrade = async (type: 'monthly' | 'annual') => {
-  const loading = toast.loading(`Preparing your ${type} subscription...`);
-  const loadingToast = toast.loading(`Connecting to Paystack for ${type} plan...`);
+  const handleUpgrade = async (type: 'monthly' | 'annual' = 'monthly') => {
+  const load = toast.loading(`Preparing your ${type} subscription...`);
   try {
     const res = await axios.post(`${API_BASE}/paystack/initialize`, 
       { planType: type }, // Send the choice to backend
@@ -124,7 +123,7 @@ function App() {
     );
     window.location.href = res.data.authorization_url; 
   } catch (err) {
-    toast.dismiss(loadingToast);
+    toast.dismiss(load);
     toast.error("Payment system unavailable");
   }
 };
@@ -459,6 +458,7 @@ const handleImplement = () => {
               <button onClick={() => handleUpgrade('annual')} className="mt-4 w-full py-2 bg-white text-blue-600 rounded-xl text-xs font-bold">Choose Annual</button>
             </div>
           </div>
+          
         </div>
 
         {/* WIDGET SECTION */}
