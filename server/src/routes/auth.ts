@@ -46,21 +46,13 @@ router.post('/google', async (req, res) => {
 
 // Get latest user info (The "Me" route)
 // Get latest user info (Required for syncProfile to work)
-// Ensure your backend router handler looks structurally like this:
-router.get("/verify", async (req, res) => {
+router.get('/me', protect, async (req: any, res: any) => {
     try {
-        const { reference } = req.query;
-        if (!reference) {
-            return res.status(400).json({ error: "Reference query parameter is missing" });
-        }
-        
-        // Your axios/fetch code here calling Paystack...
-        
-    } catch (error: any) {
-        console.error("Paystack verification crashed:", error?.response?.data || error.message);
-        return res.status(500).json({ error: "Internal payment processing error" });
+        const user = await User.findById(req.user.id).select('-password');
+        res.json(user);
+    } catch (err) {
+        res.status(500).send('Server Error');
     }
 });
-
 
 export default router;
