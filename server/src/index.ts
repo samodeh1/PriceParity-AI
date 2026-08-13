@@ -84,7 +84,7 @@ app.post('/api/paystack/initialize', protect, async (req: any, res) => {
         // 3. Logic Branch: Is it a discounted market?
         if (ppp.discountPercentage > 0) {
             // Calculate fair price in Kobo (Suggested USD * Exchange Rate * 100)
-            const rates: Record<string, number> = { "NG": 1600, "IN": 83 };
+            const rates: Record<string, number> = { "NG": 1383, "IN": 83 };
             const currentRate = rates[countryCode] || 1;
             const amountInKobo = Math.round(ppp.suggestedPrice * currentRate * 100);
 
