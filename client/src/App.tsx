@@ -79,29 +79,61 @@ function App() {
   };
 
   const handleUpgrade = async (type: 'monthly' | 'annual' = 'monthly') => {
-    const loadingToast = toast.loading(`Connecting to Paystack...`);
+    const load = toast.loading(`Connecting to Paystack...`);
     try {
       const res = await axios.post(`${API_BASE}/paystack/initialize`, { planType: type }, { headers: { 'x-auth-token': token } });
       window.location.href = res.data.authorization_url;
-    } catch (err) { toast.dismiss(loadingToast); toast.error("Payment offline"); }
+    } catch (err) { toast.dismiss(load); toast.error("Payment system offline"); }
   };
 
   const handleImplement = () => {
-    if (!user?.isPro) {
-      toast((t) => (
-        <span className="flex flex-col gap-2 p-2 text-left">
-          <b className="text-slate-800 text-lg font-black uppercase">Monthly Pro Plan</b>
-          <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest italic">Unlock AI features and widget access</p>
-          <button onClick={() => { toast.dismiss(t.id); handleUpgrade('monthly'); }} 
-            className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-black uppercase shadow-lg hover:bg-blue-700 transition-all active:scale-95">
-              Start Subscription — $12/mo
+  if (!user?.isPro) {
+    toast((t) => (
+      <div className="flex flex-col gap-4 p-4 text-left max-w-[280px]">
+        <div>
+          <b className="text-slate-900 text-lg leading-none">Choose Your Plan</b>
+          <p className="text-[11px] text-slate-400 mt-1 uppercase font-bold tracking-widest">
+            Unlock AI & Widget Access
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {/* OPTION 1: MONTHLY */}
+          <button 
+            onClick={() => { toast.dismiss(t.id); handleUpgrade('monthly'); }}
+            className="w-full flex items-center justify-between p-3 bg-white border border-slate-200 rounded-2xl hover:border-blue-600 transition-all group"
+          >
+            <div className="flex flex-col text-left">
+              <span className="text-[10px] font-black text-slate-400 uppercase">Monthly</span>
+              <span className="text-sm font-black text-slate-800">$12/mo</span>
+            </div>
+            <ArrowRight size={16} className="text-slate-300 group-hover:text-blue-600" />
           </button>
-        </span>
-      ), { duration: 6000 });
-    } else {
-      document.getElementById('widget-section')?.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+
+          {/* OPTION 2: ANNUAL */}
+          <button 
+            onClick={() => { toast.dismiss(t.id); handleUpgrade('annual'); }}
+            className="w-full flex items-center justify-between p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200 active:scale-95 transition-all group"
+          >
+            <div className="flex flex-col text-left">
+              <span className="text-[10px] font-black opacity-70 uppercase text-white">Annual (Best Value)</span>
+              <span className="text-sm font-black text-white">$99/yr</span>
+            </div>
+            <Zap size={16} fill="white" className="text-white" />
+          </button>
+        </div>
+
+        <p className="text-[9px] text-center text-slate-400 italic">Secure payment via Paystack</p>
+      </div>
+    ), { 
+      duration: 15000, // Keep open for 15 seconds so they can decide
+      position: 'top-center' 
+    });
+  } else {
+    // If already Pro, scroll to the widget
+    document.getElementById('widget-section')?.scrollIntoView({ behavior: 'smooth' });
+  }
+};
 
   const syncProfile = async (currentToken: string) => {
     try {
