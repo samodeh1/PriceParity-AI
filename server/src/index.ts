@@ -73,45 +73,41 @@ app.post('/api/paystack/initialize', protect, async (req: any, res) => {
 
         if (!user) return res.status(404).json({ error: "User not found" });
 
-        // 1. HARD FIX: Log the type to Render logs so we can see it
-        console.log("RECEIVED PLAN TYPE:", planType);
+        // 1. Determine base price
+        const basePriceUSD = planType === 'annual' ? 99 : 12;
 
-        // 2. STRICT CALCULATION: Ensure it doesn't default to annual unless clicked
-        let basePriceUSD = 12; // Default to Monthly
-        if (planType === 'annual') {
-            basePriceUSD = 99;
-        }
-
+        // 2. Detect Country
         const clientIp = requestIp.getClientIp(req) || "";
         const geo = geoip.lookup(clientIp);
-        const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
+        const countryCode = geo ? geo.country : "US";
 
+        // 3. Calculate fair price
         const ppp = calculatePPPPrice(basePriceUSD, countryCode);
 
-        // 3. Prepare the instruction for the Verify route
+        // 4. PREPARE METADATA (Very simple format to avoid 500 errors)
         const metadata = {
-            custom_fields: [
-                { display_name: "User ID", variable_name: "user_id", value: user.id },
-                { display_name: "Plan Type", variable_name: "plan_type", value: planType || 'monthly' }
-            ]
+            user_id: user.id,
+            plan_type: planType || 'monthly'
         };
 
         let paymentData;
         if (ppp.discountPercentage > 0) {
-            const rates: Record<string, number> = { "NG": 1600, "IN": 83 };
+            const rates: Record<string, number> = { "NG": 1363, "IN": 83 };
             const rate = rates[countryCode] || 1;
             const amountInKobo = Math.round(ppp.suggestedPrice * rate * 100);
-            
-            // Pass metadata to dynamic payment
+
+            // Using the dynamic function
             paymentData = await initializeDynamicPayment(user.email, amountInKobo, user.id, metadata);
         } else {
+            // Full price users
             const planCode = planType === 'annual' ? process.env.PAYSTACK_ANNUAL_PLAN : process.env.PAYSTACK_MONTHLY_PLAN;
             paymentData = await initializePaystackSubscription(user.email, planCode as string, user.id);
         }
         
         res.json(paymentData); 
     } catch (error) {
-        res.status(500).json({ error: "Initialization crash" });
+        console.error("Init Error:", error);
+        res.status(500).json({ error: "Init crash" });
     }
 });
 
@@ -135,33 +131,44 @@ app.get('/api/countries', (req, res) => {
 // 1. Ensure this route exists below your initialize route
 app.get('/api/paystack/verify', async (req, res) => {
     const { reference } = req.query;
+    if (!reference) return res.status(400).json({ error: "No reference" });
+
     try {
         const data = await verifyPaystackPayment(reference as string);
-        if (data.status === 'success') {
-            const userId = data.metadata.custom_fields[0].value;
-            const planType = data.metadata.custom_fields[1].value;
+        
+        if (data && data.status === 'success') {
+            // SAFE ACCESS: Check if metadata exists before reading it
+            const userId = data.metadata?.user_id;
+            const planType = data.metadata?.plan_type || 'monthly';
 
-            // 1. Calculate the Expiry Date
-            const now = new Date();
-            let expiryDate = new Date();
-
-            if (planType === 'annual') {
-                expiryDate.setFullYear(now.getFullYear() + 1); // Add 1 Year
-            } else {
-                expiryDate.setDate(now.getDate() + 30); // Add 30 Days
+            if (!userId) {
+                console.error("Verify Error: No user_id in metadata");
+                return res.status(400).json({ error: "Metadata missing" });
             }
 
-            // 2. Update Database with the real expiration time
+            // Calculate Expiry
+            const expiryDate = new Date();
+            if (planType === 'annual') {
+                expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+            } else {
+                expiryDate.setDate(expiryDate.getDate() + 30);
+            }
+
+            // Update User
             await User.findByIdAndUpdate(userId, { 
                 isPro: true, 
-                proExpiry: expiryDate,
-                lastPaymentReference: reference
+                proExpiry: expiryDate 
             });
 
-            res.json({ success: true, isPro: true, expiryDate });
+            console.log(`User ${userId} upgraded successfully to ${planType}`);
+            return res.json({ success: true, isPro: true });
         }
+        
+        res.status(400).json({ success: false, message: "Payment failed at gateway" });
+
     } catch (error) {
-        res.status(500).json({ error: "Verification failed" });
+        console.error("CRITICAL VERIFY ERROR:", error);
+        res.status(500).json({ error: "Server crashed during verification" });
     }
 });
 
