@@ -332,7 +332,7 @@ function App() {
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-100/30 rounded-full blur-[120px] animate-pulse"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-100/20 rounded-full blur-[100px]"></div>
       </div>
-
+      
       <nav className="py-4 px-6 max-w-7xl mx-auto flex justify-between items-center sticky top-0 z-40 bg-white/60 backdrop-blur-md">
         <div className="flex items-center gap-2 font-black text-2xl tracking-tighter uppercase italic">
           <Globe className="text-blue-600" /> <span className="text-blue-600"></span>
@@ -340,6 +340,12 @@ function App() {
         <div className="flex items-center gap-4">
           {!user?.isPro && (
             <button onClick={() => handleImplement()} className="text-xs font-black text-blue-600 uppercase tracking-widest hover:underline transition-all">Upgrade Pro</button>
+          )}
+
+          {user?.isPro && user?.proExpiry && (
+            <p className="text-[10px] text-green-600 font-bold uppercase tracking-widest mt-2">
+              Pro Membership Active until: {new Date(user.proExpiry).toLocaleDateString()}
+            </p>
           )}
           <div className="flex items-center gap-4 bg-white/80 p-1.5 pl-4 rounded-full border border-slate-200 shadow-sm">
              <span className="text-[10px] font-black uppercase text-slate-500">{user?.username?.split(' ')[0]}</span>
