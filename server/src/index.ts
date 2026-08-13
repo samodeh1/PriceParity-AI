@@ -69,38 +69,57 @@ app.post('/api/calculate', protect, async (req: any, res) => {
 app.post('/api/paystack/initialize', protect, async (req: any, res) => {
     try {
         const user = await User.findById(req.user.id);
+        // 1. Get the plan type from the frontend ('monthly' or 'annual')
+        const { planType } = req.body; 
+
+        const metadata = {
+            custom_fields: [
+                { display_name: "User ID", variable_name: "user_id", value: user.id },
+                { display_name: "Plan Type", variable_name: "plan_type", value: planType } // <--- CRUCIAL
+            ]
+        };
+
         if (!user) return res.status(404).json({ error: "User not found" });
 
-        // 1. Detect Country
+        // 2. Set the Base USD Price based on the choice
+        const basePriceUSD = planType === 'annual' ? 99 : 12;
+
+        // 3. Detect Country
         const clientIp = requestIp.getClientIp(req) || "";
         const geo = geoip.lookup(clientIp);
         const countryCode = geo ? geo.country : "US";
 
-        // 2. Use your own Engine to calculate the $12 Pro Price for THIS user
-        const ppp = calculatePPPPrice(12, countryCode);
+        // 4. Calculate the localized "Fair Price" for the SPECIFIC base price
+        const ppp = calculatePPPPrice(basePriceUSD, countryCode);
 
         let paymentData;
 
-        // 3. Logic Branch: Is it a discounted market?
+        // 5. Logic Branch: Discounted Market vs Full Price
         if (ppp.discountPercentage > 0) {
-            // Calculate fair price in Kobo (Suggested USD * Exchange Rate * 100)
-            const rates: Record<string, number> = { "NG": 1383, "IN": 83 };
+            const rates: Record<string, number> = { "NG": 1363, "IN": 83 };
             const currentRate = rates[countryCode] || 1;
+            
+            // Calculate Kobo based on the new dynamic suggested price
             const amountInKobo = Math.round(ppp.suggestedPrice * currentRate * 100);
 
-            // Use the DYNAMIC function (₦5,809)
+            // Use DYNAMIC payment for discounted regions
             paymentData = await initializeDynamicPayment(user.email, amountInKobo, user.id);
         } else {
-            // Use the FIXED PLAN function ($12)
+            // Use FIXED plan codes for full-price regions (USA/UK/Europe)
+            const planCode = planType === 'annual' 
+                ? process.env.PAYSTACK_ANNUAL_PLAN 
+                : process.env.PAYSTACK_MONTHLY_PLAN;
+
             paymentData = await initializePaystackSubscription(
                 user.email, 
-                process.env.PAYSTACK_MONTHLY_PLAN as string, 
+                planCode as string, 
                 user.id
             );
         }
         
         res.json(paymentData); 
     } catch (error) {
+        console.error("Payment Init Error:", error);
         res.status(500).json({ error: "Checkout engine failure" });
     }
 });
@@ -125,29 +144,33 @@ app.get('/api/countries', (req, res) => {
 // 1. Ensure this route exists below your initialize route
 app.get('/api/paystack/verify', async (req, res) => {
     const { reference } = req.query;
-
-    if (!reference) {
-        return res.status(400).json({ error: "No reference provided" });
-    }
-
     try {
-        // This calls the function in your paystack.ts file
         const data = await verifyPaystackPayment(reference as string);
-
         if (data.status === 'success') {
-            // Find the user ID we hid in the metadata earlier
             const userId = data.metadata.custom_fields[0].value;
+            const planType = data.metadata.custom_fields[1].value;
 
-            // Update the user to Pro in the Database
-            await User.findByIdAndUpdate(userId, { isPro: true });
+            // 1. Calculate the Expiry Date
+            const now = new Date();
+            let expiryDate = new Date();
 
-            res.json({ success: true, isPro: true });
-        } else {
-            res.status(400).json({ success: false, message: "Payment failed" });
+            if (planType === 'annual') {
+                expiryDate.setFullYear(now.getFullYear() + 1); // Add 1 Year
+            } else {
+                expiryDate.setDate(now.getDate() + 30); // Add 30 Days
+            }
+
+            // 2. Update Database with the real expiration time
+            await User.findByIdAndUpdate(userId, { 
+                isPro: true, 
+                proExpiry: expiryDate,
+                lastPaymentReference: reference
+            });
+
+            res.json({ success: true, isPro: true, expiryDate });
         }
     } catch (error) {
-        console.error("Verification Error:", error);
-        res.status(500).json({ error: "Internal Server Error during verification" });
+        res.status(500).json({ error: "Verification failed" });
     }
 });
 

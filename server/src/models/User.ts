@@ -7,8 +7,12 @@ const UserSchema = new mongoose.Schema({
     googleId: { type: String },
     isPro: { type: Boolean, default: false }, // Crucial for monetization
     subscriptionId: { type: String }, 
-    customerCode: { type: String }, 
-    createdAt: { type: Date, default: Date.now }
+    customerCode: { type: String },
+    proExpiry: { type: Date }, 
+    lastPaymentReference: { type: String },
+    createdAt: { type: Date, default: Date.now } 
 });
 
 export default mongoose.model('User', UserSchema);
+
+

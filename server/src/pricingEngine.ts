@@ -11,7 +11,7 @@ const pppData: Record<string, CountryData> = {
      // =========================================================================
     // --- REGION: WEST AFRICA ---
     // =========================================================================
-    "NG": { name: "Nigeria", multiplier: 0.35, symbol: "₦", rate: 1383 },
+    "NG": { name: "Nigeria", multiplier: 0.35, symbol: "₦", rate: 1363 },
     "GH": { name: "Ghana", multiplier: 0.35, symbol: "GH₵", rate: 15 },
     "CI": { name: "Côte d'Ivoire", multiplier: 0.35, symbol: "FCFA", rate: 605 },
     "SN": { name: "Senegal", multiplier: 0.35, symbol: "FCFA", rate: 605 },
