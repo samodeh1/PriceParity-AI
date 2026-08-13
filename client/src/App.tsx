@@ -78,13 +78,19 @@ function App() {
     } catch (err: any) { toast.error("Generation failed"); } finally { setLoading(false); }
   };
 
-  const handleUpgrade = async (type: 'monthly' | 'annual' = 'monthly') => {
-    const load = toast.loading(`Connecting to Paystack...`);
-    try {
-      const res = await axios.post(`${API_BASE}/paystack/initialize`, { planType: type }, { headers: { 'x-auth-token': token } });
-      window.location.href = res.data.authorization_url;
-    } catch (err) { toast.dismiss(load); toast.error("Payment system offline"); }
-  };
+ const handleUpgrade = async (type: 'monthly' | 'annual') => {
+  const load = toast.loading(`Connecting...`);
+  try {
+    const res = await axios.post(`${API_BASE}/paystack/initialize`, 
+      { planType: type }, // CRUCIAL: Must send the type in the body
+      { headers: { 'x-auth-token': token } }
+    );
+    window.location.href = res.data.authorization_url; 
+  } catch (err) {
+    toast.dismiss(load);
+    toast.error("Payment Error");
+  }
+};
 
   const handleImplement = () => {
   if (!user?.isPro) {
