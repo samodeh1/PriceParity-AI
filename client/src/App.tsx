@@ -105,7 +105,7 @@ function App() {
           >
             <div className="flex flex-col text-left">
               <span className="text-[10px] font-black text-slate-400 uppercase">Monthly</span>
-              <span className="text-sm font-black text-slate-800">$12/mo</span>
+              <span className="text-sm font-black text-slate-800">Localized Pricing.</span>
             </div>
             <ArrowRight size={16} className="text-slate-300 group-hover:text-blue-600" />
           </button>
@@ -117,7 +117,7 @@ function App() {
           >
             <div className="flex flex-col text-left">
               <span className="text-[10px] font-black opacity-70 uppercase text-white">Annual (Best Value)</span>
-              <span className="text-sm font-black text-white">$99/yr</span>
+              <span className="text-sm font-black text-white">Localized Pricing.</span>
             </div>
             <Zap size={16} fill="white" className="text-white" />
           </button>
