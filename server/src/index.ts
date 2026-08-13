@@ -11,7 +11,7 @@ import authRoutes from './routes/auth.js';
 import Strategy from './models/Strategy.js';
 import { protect } from './middleware/authMiddleware.js';
 import User from './models/User.js';
-import { initializePaystackSubscription, verifyPaystackPayment } from './paystack.js';
+import { initializeDynamicPayment, initializePaystackSubscription, verifyPaystackPayment } from './paystack.js';
 
 
 
@@ -68,25 +68,40 @@ app.post('/api/calculate', protect, async (req: any, res) => {
 
 app.post('/api/paystack/initialize', protect, async (req: any, res) => {
     try {
-        // 1. Get user from DB using the ID from the token
         const user = await User.findById(req.user.id);
-        const { planType } = req.body; // Expects 'monthly' or 'annual'
-        
         if (!user) return res.status(404).json({ error: "User not found" });
 
-        // Logic to pick the right code from .env
-        const planCode = planType === 'annual' 
-            ? process.env.PAYSTACK_ANNUAL_PLAN 
-            : process.env.PAYSTACK_MONTHLY_PLAN;
+        // 1. Detect Country
+        const clientIp = requestIp.getClientIp(req) || "";
+        const geo = geoip.lookup(clientIp);
+        const countryCode = geo ? geo.country : "US";
 
-        // 2. Pass the real email from the database
-        const paymentData = await initializePaystackSubscription(user.email, planCode as string, user.id.toString());
+        // 2. Use your own Engine to calculate the $12 Pro Price for THIS user
+        const ppp = calculatePPPPrice(12, countryCode);
+
+        let paymentData;
+
+        // 3. Logic Branch: Is it a discounted market?
+        if (ppp.discountPercentage > 0) {
+            // Calculate fair price in Kobo (Suggested USD * Exchange Rate * 100)
+            const rates: Record<string, number> = { "NG": 1600, "IN": 83 };
+            const currentRate = rates[countryCode] || 1;
+            const amountInKobo = Math.round(ppp.suggestedPrice * currentRate * 100);
+
+            // Use the DYNAMIC function (₦5,809)
+            paymentData = await initializeDynamicPayment(user.email, amountInKobo, user.id);
+        } else {
+            // Use the FIXED PLAN function ($12)
+            paymentData = await initializePaystackSubscription(
+                user.email, 
+                process.env.PAYSTACK_MONTHLY_PLAN as string, 
+                user.id
+            );
+        }
         
         res.json(paymentData); 
     } catch (error) {
-        console.error("Paystack Error:", error); // This helps you see the real error in the terminal
-        res.status(500).json({ error: "Subscription initialization failed"     
-        });
+        res.status(500).json({ error: "Checkout engine failure" });
     }
 });
 
