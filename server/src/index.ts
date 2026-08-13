@@ -69,58 +69,49 @@ app.post('/api/calculate', protect, async (req: any, res) => {
 app.post('/api/paystack/initialize', protect, async (req: any, res) => {
     try {
         const user = await User.findById(req.user.id);
-        // 1. Get the plan type from the frontend ('monthly' or 'annual')
-        const { planType } = req.body; 
-
-        const metadata = {
-            custom_fields: [
-                { display_name: "User ID", variable_name: "user_id", value: user.id },
-                { display_name: "Plan Type", variable_name: "plan_type", value: planType } // <--- CRUCIAL
-            ]
-        };
+        const { planType } = req.body; // 'monthly' or 'annual'
 
         if (!user) return res.status(404).json({ error: "User not found" });
 
-        // 2. Set the Base USD Price based on the choice
-        const basePriceUSD = planType === 'annual' ? 99 : 12;
+        // 1. HARD FIX: Log the type to Render logs so we can see it
+        console.log("RECEIVED PLAN TYPE:", planType);
 
-        // 3. Detect Country
+        // 2. STRICT CALCULATION: Ensure it doesn't default to annual unless clicked
+        let basePriceUSD = 12; // Default to Monthly
+        if (planType === 'annual') {
+            basePriceUSD = 99;
+        }
+
         const clientIp = requestIp.getClientIp(req) || "";
         const geo = geoip.lookup(clientIp);
-        const countryCode = geo ? geo.country : "US";
+        const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
 
-        // 4. Calculate the localized "Fair Price" for the SPECIFIC base price
         const ppp = calculatePPPPrice(basePriceUSD, countryCode);
 
+        // 3. Prepare the instruction for the Verify route
+        const metadata = {
+            custom_fields: [
+                { display_name: "User ID", variable_name: "user_id", value: user.id },
+                { display_name: "Plan Type", variable_name: "plan_type", value: planType || 'monthly' }
+            ]
+        };
+
         let paymentData;
-
-        // 5. Logic Branch: Discounted Market vs Full Price
         if (ppp.discountPercentage > 0) {
-            const rates: Record<string, number> = { "NG": 1363, "IN": 83 };
-            const currentRate = rates[countryCode] || 1;
+            const rates: Record<string, number> = { "NG": 1600, "IN": 83 };
+            const rate = rates[countryCode] || 1;
+            const amountInKobo = Math.round(ppp.suggestedPrice * rate * 100);
             
-            // Calculate Kobo based on the new dynamic suggested price
-            const amountInKobo = Math.round(ppp.suggestedPrice * currentRate * 100);
-
-            // Use DYNAMIC payment for discounted regions
-            paymentData = await initializeDynamicPayment(user.email, amountInKobo, user.id);
+            // Pass metadata to dynamic payment
+            paymentData = await initializeDynamicPayment(user.email, amountInKobo, user.id, metadata);
         } else {
-            // Use FIXED plan codes for full-price regions (USA/UK/Europe)
-            const planCode = planType === 'annual' 
-                ? process.env.PAYSTACK_ANNUAL_PLAN 
-                : process.env.PAYSTACK_MONTHLY_PLAN;
-
-            paymentData = await initializePaystackSubscription(
-                user.email, 
-                planCode as string, 
-                user.id
-            );
+            const planCode = planType === 'annual' ? process.env.PAYSTACK_ANNUAL_PLAN : process.env.PAYSTACK_MONTHLY_PLAN;
+            paymentData = await initializePaystackSubscription(user.email, planCode as string, user.id);
         }
         
         res.json(paymentData); 
     } catch (error) {
-        console.error("Payment Init Error:", error);
-        res.status(500).json({ error: "Checkout engine failure" });
+        res.status(500).json({ error: "Initialization crash" });
     }
 });
 
