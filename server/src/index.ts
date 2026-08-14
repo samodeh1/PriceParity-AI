@@ -173,33 +173,25 @@ app.post('/api/create-checkout-session', protect, async (req: any, res) => {
 app.get('/api/widget', async (req: any, res: any) => {
     try {
         const originalPrice = Number(req.query.price) || 12;
-        const clientIp = requestIp.getClientIp(req) || "";
-        const geo = geoip.lookup(clientIp);
-        const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
-
-        const result = calculatePPPPrice(originalPrice, countryCode);
-        const pppMultiplier = result.discountPercentage > 0 ? (result.suggestedPrice / originalPrice) : 1;
+        const result = calculatePPPPrice(originalPrice, "NG"); // Test with NG first
         
-        // Find the specific rate for this country from our engine
-        const currentRate = pppData[countryCode]?.rate || 1;
-
         res.setHeader('Content-Type', 'application/javascript');
         res.send(`
             (function() {
-                function inject() {
-                    const els = document.querySelectorAll('[data-pp-price]');
-                    els.forEach(el => {
-                        const p = parseFloat(el.getAttribute('data-pp-price'));
-                        if (isNaN(p)) return;
-                        const local = Math.round(p * ${pppMultiplier} * ${currentRate});
-                        el.innerHTML = '✨ Local Offer: Residents of ${result.countryName} pay only <b>${result.symbol}' + local.toLocaleString() + '</b>';
-                        el.style.cssText = "display:inline-flex; align-items:center; gap:8px; background:rgba(37,99,235,0.05); color:#2563eb; padding:8px 16px; border-radius:99px; font-size:13px; font-weight:700; border:1px solid rgba(37,99,235,0.1);";
-                    });
+                function tryInject() {
+                    const target = document.querySelector('[data-pp-price]');
+                    if (target) {
+                        target.innerHTML = ' Local Offer: Residents of ${result.countryName} pay only <b>${result.localPriceFormatted}</b>';
+                        target.style.cssText = "display:inline-flex; align-items:center; background:rgba(37,99,235,0.05); color:#2563eb; padding:8px 16px; border-radius:99px; font-size:13px; font-weight:700; border:1px solid rgba(37,99,235,0.1); animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;";
+                    } else {
+                        // If not found yet, try again in 500ms
+                        setTimeout(tryInject, 500);
+                    }
                 }
-                document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
+                tryInject();
             })();
         `);
-    } catch (e) { res.status(500).send('console.error("Widget Load Error")'); }
+    } catch (e) { res.status(500).send(""); }
 });
 
 
