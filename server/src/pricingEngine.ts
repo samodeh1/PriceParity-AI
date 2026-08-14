@@ -172,11 +172,11 @@ export const calculatePPPPrice = (originalPrice: number, countryCode: string) =>
     const suggestedPriceUSD = originalPrice * country.multiplier;
     const localAmount = suggestedPriceUSD * country.rate;
     
-    return {
+  return {
         suggestedPrice: Number(suggestedPriceUSD.toFixed(2)),
-        localPriceFormatted: `${country.symbol}${Math.round(localAmount).toLocaleString()}`,
+        localPriceFormatted: String(`${symbol}${Math.round(localAmount).toLocaleString()}`),
         discountPercentage: Math.round((1 - country.multiplier) * 100),
-        symbol: country.symbol,
-        countryName: country.name
+        symbol: String(country.symbol),
+        countryName: String(country.name)
     };
 };

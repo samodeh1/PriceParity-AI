@@ -11,7 +11,7 @@ import authRoutes from './routes/auth.js';
 import Strategy from './models/Strategy.js';
 import { protect } from './middleware/authMiddleware.js';
 import User from './models/User.js';
-import { initializeDynamicPayment, initializePaystackSubscription, verifyPaystackPayment } from './paystack.js';
+import { initializeDynamicPayment, verifyPaystackPayment } from './paystack.js';
 
 
 
@@ -180,45 +180,64 @@ app.post('/api/create-checkout-session', protect, async (req: any, res) => {
 // This route will be called by "Widget" on other people's websites
 // 1. We use (req, res) as standard Express parameters
 
-app.get('/api/widget', async (req, res) => {
+app.get('/api/widget', async (req: any, res: any) => { // Added :any to parameters
     try {
         const originalPrice = Number(req.query.price);
         const clientIp = requestIp.getClientIp(req) || "";
         const geo = geoip.lookup(clientIp);
         const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
 
-        const result = calculatePPPPrice(originalPrice, countryCode);
+        // 1. Get result and tell TS to treat it as "any" to clear the property errors
+        const result = calculatePPPPrice(100, countryCode) as any;
+        
+        // 2. Fix the exchangeRate math (Cleaning the string to get just numbers)
+        const numericLocalPrice = Number(result.localPriceFormatted.replace(/[^0-9.]/g, ''));
+        const exchangeRate = numericLocalPrice / result.suggestedPrice;
+        const symbol = result.symbol;
 
         res.setHeader('Content-Type', 'application/javascript');
+        
         res.send(`
             (function() {
-                function injectWidget() {
-                    const element = document.getElementById('price-parity-display');
-                    if (element) {
-                        element.innerHTML = '✨ Local Offer: Residents of ${result.countryName} pay only <b>${result.localPriceFormatted}</b>';
-                        element.style.display = 'inline-flex';
-                        element.style.alignItems = 'center';
-                        element.style.gap = '8px';
-                        element.style.background = 'rgba(37, 99, 235, 0.05)';
-                        element.style.color = '#2563eb';
-                        element.style.padding = '8px 20px';
-                        element.style.borderRadius = '99px';
-                        element.style.fontSize = '13px';
-                        element.style.fontWeight = '700';
-                        element.style.border = '1px solid rgba(37, 99, 235, 0.1)';
-                    }
+                const multiplier = ${result.discountPercentage > 0 ? (result.suggestedPrice / 100) : 1};
+                const exchangeRate = ${exchangeRate};
+                const symbol = "${symbol}";
+                const country = "${result.countryName}";
+
+                function updatePrices() {
+                    const priceElements = document.querySelectorAll('[data-pp-price]');
+                    priceElements.forEach(el => {
+                        const originalPrice = parseFloat(el.getAttribute('data-pp-price'));
+                        if (isNaN(originalPrice)) return;
+
+                        const fairUSD = originalPrice * multiplier;
+                        const fairLocal = Math.round(fairUSD * exchangeRate);
+                        const formatted = symbol + fairLocal.toLocaleString();
+
+                        el.innerHTML = ' ' + country + ' Offer: <b>' + formatted + '</b>';
+                        el.style.display = 'inline-flex';
+                        el.style.alignItems = 'center';
+                        el.style.gap = '8px';
+                        el.style.background = 'rgba(37, 99, 235, 0.05)';
+                        el.style.color = '#2563eb';
+                        el.style.padding = '8px 16px';
+                        el.style.borderRadius = '99px';
+                        el.style.fontSize = '12px';
+                        el.style.fontWeight = '700';
+                        el.style.border = '1px solid rgba(37, 99, 235, 0.1)';
+                    });
                 }
 
-                // If page is still loading, wait. If ready, inject.
                 if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', injectWidget);
+                    document.addEventListener('DOMContentLoaded', updatePrices);
                 } else {
-                    injectWidget();
+                    updatePrices();
                 }
             })();
         `);
     } catch (error) {
-        res.status(500).send('console.error("Widget Error");');
+        console.error("Widget Error:", error);
+        res.status(500).send('console.error("PriceParity Widget Load Failed");');
     }
 });
 
