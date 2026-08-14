@@ -69,44 +69,34 @@ app.post('/api/calculate', protect, async (req: any, res) => {
 app.post('/api/paystack/initialize', protect, async (req: any, res) => {
     try {
         const user = await User.findById(req.user.id);
-        const { planType } = req.body; // 'monthly' or 'annual'
-
+        const { planType } = req.body;
         if (!user) return res.status(404).json({ error: "User not found" });
 
-        // 1. Determine base price
         const basePriceUSD = planType === 'annual' ? 99 : 12;
 
-        // 2. Detect Country
         const clientIp = requestIp.getClientIp(req) || "";
         const geo = geoip.lookup(clientIp);
         const countryCode = geo ? geo.country : "US";
 
-        // 3. Calculate fair price
         const ppp = calculatePPPPrice(basePriceUSD, countryCode);
 
-        // 4. PREPARE METADATA (Very simple format to avoid 500 errors)
+        // --- GLOBAL CORRECTION ---
+        // Paystack Nigeria expects Kobo. We must convert everything to Naira.
+        // Even if the user is in the US, we charge them the Naira equivalent of their price.
+        const EXCHANGE_RATE = 1363; // Current market rate
+        
+        // SuggestedPrice (in USD) * Current Rate * 100 (for Kobo)
+        const amountInKobo = Math.round(ppp.suggestedPrice * EXCHANGE_RATE * 100);
+
         const metadata = {
             user_id: user.id,
             plan_type: planType || 'monthly'
         };
 
-        let paymentData;
-        if (ppp.discountPercentage > 0) {
-            const rates: Record<string, number> = { "NG": 1363, "IN": 83 };
-            const rate = rates[countryCode] || 1;
-            const amountInKobo = Math.round(ppp.suggestedPrice * rate * 100);
-
-            // Using the dynamic function
-            paymentData = await initializeDynamicPayment(user.email, amountInKobo, user.id, metadata);
-        } else {
-            // Full price users
-            const planCode = planType === 'annual' ? process.env.PAYSTACK_ANNUAL_PLAN : process.env.PAYSTACK_MONTHLY_PLAN;
-            paymentData = await initializePaystackSubscription(user.email, planCode as string, user.id);
-        }
+        const paymentData = await initializeDynamicPayment(user.email, amountInKobo, user.id, metadata);
         
         res.json(paymentData); 
     } catch (error) {
-        console.error("Init Error:", error);
         res.status(500).json({ error: "Init crash" });
     }
 });
@@ -192,60 +182,43 @@ app.post('/api/create-checkout-session', protect, async (req: any, res) => {
 
 app.get('/api/widget', async (req, res) => {
     try {
-         // 1. Get the price from the URL
         const originalPrice = Number(req.query.price);
-
-        // 2. If the customer forgot the price, stop the script and show an error in console
-        if (!originalPrice || isNaN(originalPrice)) {
-            res.setHeader('Content-Type', 'application/javascript');
-            return res.send('console.error("PriceParity Error: No price provided in script URL");');
-        }
-
-        // 1. Get real IP address from headers (Works on Render/Production)
-        const forwarded = req.headers['x-forwarded-for'];
-        const clientIp = typeof forwarded === 'string' 
-            ? forwarded.split(',')[0] 
-            : req.socket.remoteAddress || "";
-
-        // 2. Lookup the country using GeoIP
+        const clientIp = requestIp.getClientIp(req) || "";
         const geo = geoip.lookup(clientIp);
-        
-        // 3. Fallback logic: If IP is local (testing) or not found, use a default
-        // For development testing, you can force 'NG' here if geo is null
-        const countryCode = geo ? geo.country : "US"; 
-
-        // --- TEST MODE FOR SAMUEL ---
-        // If you are on localhost, geo will be null.
-        // Add ?test_country=GB to your browser URL to test the UK, etc.
-        if (req.query.test_country) {
-            countryCode = String(req.query.test_country).toUpperCase();
-        }
+        const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
 
         const result = calculatePPPPrice(originalPrice, countryCode);
 
         res.setHeader('Content-Type', 'application/javascript');
-        
-        // 4. Return the Dynamic Script with real data
         res.send(`
             (function() {
-                const element = document.getElementById('price-parity-display');
-                if (element) {
-                    element.innerHTML = ' Special Offer: Residents of ${result.countryName} pay only <b>${result.localPriceFormatted}</b>';
-                    element.style.display = 'inline-flex';
-                    element.style.alignItems = 'center';
-                    element.style.gap = '8px';
-                    element.style.background = 'rgba(37, 99, 235, 0.05)';
-                    element.style.color = '#2563eb';
-                    element.style.padding = '8px 16px';
-                    element.style.borderRadius = '99px';
-                    element.style.fontSize = '12px';
-                    element.style.fontWeight = '700';
-                    element.style.border = '1px solid rgba(37, 99, 235, 0.1)';
+                function injectWidget() {
+                    const element = document.getElementById('price-parity-display');
+                    if (element) {
+                        element.innerHTML = '✨ Local Offer: Residents of ${result.countryName} pay only <b>${result.localPriceFormatted}</b>';
+                        element.style.display = 'inline-flex';
+                        element.style.alignItems = 'center';
+                        element.style.gap = '8px';
+                        element.style.background = 'rgba(37, 99, 235, 0.05)';
+                        element.style.color = '#2563eb';
+                        element.style.padding = '8px 20px';
+                        element.style.borderRadius = '99px';
+                        element.style.fontSize = '13px';
+                        element.style.fontWeight = '700';
+                        element.style.border = '1px solid rgba(37, 99, 235, 0.1)';
+                    }
+                }
+
+                // If page is still loading, wait. If ready, inject.
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', injectWidget);
+                } else {
+                    injectWidget();
                 }
             })();
         `);
     } catch (error) {
-        res.status(500).send('console.error("PriceParity Widget Load Failed");');
+        res.status(500).send('console.error("Widget Error");');
     }
 });
 
