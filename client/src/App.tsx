@@ -406,13 +406,22 @@ function App() {
         {/* WIDGET SECTION */}
         {result && user?.isPro && (
           <div id="widget-section" className="mb-24 p-8 md:p-12 bg-white rounded-[3rem] border-2 border-dashed border-slate-100 shadow-2xl animate-in zoom-in">
-             <h4 className="text-2xl font-black text-slate-800 mb-2 uppercase italic underline decoration-blue-600 underline-offset-8">Implementation Widget</h4>
-             <p className="text-slate-500 mb-8 max-w-lg font-medium">Paste this script into your site to automate local pricing.</p>
-             <div className="bg-slate-900 p-6 rounded-3xl font-mono text-[10px] text-blue-300 overflow-x-auto shadow-inner leading-relaxed">
-                {`<div id="price-parity-display"></div>\n<script src="${API_BASE}/widget?price=${price}"></script>`}
-             </div>
-             <button onClick={() => { navigator.clipboard.writeText(`<div id="price-parity-display"></div>\n<script src="${API_BASE}/widget?price=${price}"></script>`); toast.success("Widget code copied!"); }}
-                className="mt-6 text-xs font-black text-blue-600 uppercase tracking-widest hover:underline transition-all">Copy logic code</button>
+            <h4 className="text-2xl font-black text-slate-800 mb-2 uppercase italic underline decoration-blue-600 underline-offset-8">Implementation Widget</h4>
+            <p className="text-slate-500 mb-8 max-w-lg font-medium">Paste this script into your site to automate local pricing.</p>
+            
+            {/* FIXED: The box now shows the real price instead of '...' */}
+            <div className="bg-slate-900 p-6 rounded-3xl font-mono text-[10px] text-blue-300 overflow-x-auto shadow-inner leading-relaxed">
+                {`<div id="price-parity-display"></div>\n<script src="https://priceparity-api-live.onrender.com/api/widget?price=${price}"></script>`}
+            </div>
+
+            {/* This button logic is already correct! */}
+            <button onClick={() => { 
+                navigator.clipboard.writeText(`<div id="price-parity-display"></div>\n<script src="https://priceparity-api-live.onrender.com/api/widget?price=${price}"></script>`); 
+                toast.success("Widget code copied!"); 
+              }}
+              className="mt-6 text-xs font-black text-blue-600 uppercase tracking-widest hover:underline transition-all">
+                Copy logic code
+            </button>
           </div>
         )}
 
