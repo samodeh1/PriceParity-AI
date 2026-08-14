@@ -233,15 +233,20 @@ function App() {
     };
   }, [token]);
 
-  useEffect(() => {
+ useEffect(() => {
     if (!token) {
       const urlParams = new URLSearchParams(window.location.search);
       const testCountry = urlParams.get('test_country') || '';
+      
       const script = document.createElement("script");
-      script.src = `${API_BASE}/widget?price=12&test_country=${testCountry}`; 
+      // Notice: No ?price=12 needed anymore!
+      script.src = `${API_BASE}/widget${testCountry ? '?test_country=' + testCountry : ''}`; 
       script.async = true;
       document.body.appendChild(script);
-      return () => { if (document.body.contains(script)) document.body.removeChild(script); };
+      
+      return () => {
+        if (document.body.contains(script)) document.body.removeChild(script);
+      };
     }
   }, [token]);
 
@@ -278,7 +283,7 @@ function App() {
 
         <section className="max-w-6xl mx-auto px-6 pt-10 pb-16 text-center">
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-            <div id="price-parity-display" className="mb-6 min-h-[40px] flex justify-center"></div>
+            <div data-pp-price="12" className="mb-6 min-h-[40px] flex justify-center items-center"></div>
             <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase mb-8">
                <Sparkles size={12} fill="currentColor" /> The Future of Global Sales
             </div>
@@ -403,24 +408,34 @@ function App() {
           </div>
         </div>
 
-        {/* WIDGET SECTION */}
+        {/* PRO PLUS WIDGET SECTION */}
         {result && user?.isPro && (
           <div id="widget-section" className="mb-24 p-8 md:p-12 bg-white rounded-[3rem] border-2 border-dashed border-slate-100 shadow-2xl animate-in zoom-in">
-            <h4 className="text-2xl font-black text-slate-800 mb-2 uppercase italic underline decoration-blue-600 underline-offset-8">Implementation Widget</h4>
-            <p className="text-slate-500 mb-8 max-w-lg font-medium">Paste this script into your site to automate local pricing.</p>
+            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
+              Pro Plus Feature Unlocked
+            </div>
+            <h4 className="text-2xl font-black text-slate-800 mb-2 uppercase italic underline decoration-blue-600 underline-offset-8">Universal Implementation</h4>
+            <p className="text-slate-500 mb-8 max-w-lg font-medium text-sm">Follow these two steps to automate your global pricing.</p>
             
-            {/* FIXED: The box now shows the real price instead of '...' */}
-            <div className="bg-slate-900 p-6 rounded-3xl font-mono text-[10px] text-blue-300 overflow-x-auto shadow-inner leading-relaxed">
-                {`<div id="price-parity-display"></div>\n<script src="https://priceparity-api-live.onrender.com/api/widget?price=${price}"></script>`}
+            <div className="bg-slate-900 p-6 rounded-3xl font-mono text-[10px] text-blue-300 overflow-x-auto shadow-inner mb-6 leading-relaxed">
+                {/* Step 1: Markup */}
+                {`<!-- Step 1: Add this attribute to your price element -->\n`}
+                <span className="text-blue-500">{`<span data-pp-price="${price}"></span>`}</span>
+                
+                {/* Step 2: The Universal Script */}
+                {`\n\n<!-- Step 2: Paste this script once at the bottom of your page -->\n`}
+                <span className="text-blue-500">{`<script src="https://priceparity-api-live.onrender.com/api/widget"></script>`}</span>
             </div>
 
-            {/* This button logic is already correct! */}
-            <button onClick={() => { 
-                navigator.clipboard.writeText(`<div id="price-parity-display"></div>\n<script src="https://priceparity-api-live.onrender.com/api/widget?price=${price}"></script>`); 
-                toast.success("Widget code copied!"); 
+            <button 
+              onClick={() => { 
+                const universalCode = `<span data-pp-price="${price}"></span>\n<script src="https://priceparity-api-live.onrender.com/api/widget"></script>`;
+                navigator.clipboard.writeText(universalCode); 
+                toast.success("Universal Pro Plus code copied!"); 
               }}
-              className="mt-6 text-xs font-black text-blue-600 uppercase tracking-widest hover:underline transition-all">
-                Copy logic code
+              className="mt-6 text-xs font-black text-blue-600 uppercase tracking-widest hover:underline transition-all"
+            >
+              Copy Multi-Product Code
             </button>
           </div>
         )}
