@@ -7,7 +7,7 @@ interface CountryData {
     rate: number;
 }
 
-const pppData: Record<string, CountryData> = {
+export const pppData: Record<string, CountryData> = {
      // =========================================================================
     // --- REGION: WEST AFRICA ---
     // =========================================================================

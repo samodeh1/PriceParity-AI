@@ -66,39 +66,30 @@ app.post('/api/calculate', protect, async (req: any, res) => {
     }
 });
 
-app.post('/api/paystack/initialize', protect, async (req: any, res) => {
+app.post('/api/paystack/initialize', protect, async (req: any, res: any) => {
     try {
         const user = await User.findById(req.user.id);
         const { planType } = req.body;
         if (!user) return res.status(404).json({ error: "User not found" });
 
         const basePriceUSD = planType === 'annual' ? 99 : 12;
-
         const clientIp = requestIp.getClientIp(req) || "";
         const geo = geoip.lookup(clientIp);
         const countryCode = geo ? geo.country : "US";
 
         const ppp = calculatePPPPrice(basePriceUSD, countryCode);
 
-        // --- GLOBAL CORRECTION ---
-        // Paystack Nigeria expects Kobo. We must convert everything to Naira.
-        // Even if the user is in the US, we charge them the Naira equivalent of their price.
-        const EXCHANGE_RATE = 1363; // Current market rate
-        
-        // SuggestedPrice (in USD) * Current Rate * 100 (for Kobo)
+        // --- THE MONEY FIX ---
+        // We use a stable exchange rate (1363) to convert the suggested USD to Naira Kobo.
+        // This prevents international users from being charged '₦12'.
+        const EXCHANGE_RATE = 1363; 
         const amountInKobo = Math.round(ppp.suggestedPrice * EXCHANGE_RATE * 100);
 
-        const metadata = {
-            user_id: user.id,
-            plan_type: planType || 'monthly'
-        };
-
+        const metadata = { user_id: user.id, plan_type: planType || 'monthly' };
         const paymentData = await initializeDynamicPayment(user.email, amountInKobo, user.id, metadata);
         
         res.json(paymentData); 
-    } catch (error) {
-        res.status(500).json({ error: "Init crash" });
-    }
+    } catch (error) { res.status(500).json({ error: "Checkout engine failure" }); }
 });
 
 // Get all saved strategies for the logged-in user
@@ -181,64 +172,36 @@ app.post('/api/create-checkout-session', protect, async (req: any, res) => {
 // 1. We use (req, res) as standard Express parameters
 app.get('/api/widget', async (req: any, res: any) => {
     try {
-        const originalPrice = Number(req.query.price);
-        
-        if (!originalPrice || isNaN(originalPrice)) {
-             res.setHeader('Content-Type', 'application/javascript');
-             return res.send('console.warn("PriceParity: No valid price provided in script");');
-        }
-
+        const originalPrice = Number(req.query.price) || 12;
         const clientIp = requestIp.getClientIp(req) || "";
         const geo = geoip.lookup(clientIp);
         const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
 
-        // 1. Calculate result
         const result = calculatePPPPrice(originalPrice, countryCode);
-        
-        // 2. Calculate stable multiplier and rates for the client-side script
         const pppMultiplier = result.discountPercentage > 0 ? (result.suggestedPrice / originalPrice) : 1;
         
+        // Find the specific rate for this country from our engine
+        const currentRate = pppData[countryCode]?.rate || 1;
+
         res.setHeader('Content-Type', 'application/javascript');
         res.send(`
             (function() {
-                function injectWidget() {
-                    const elements = document.querySelectorAll('[data-pp-price]');
-                    if (elements.length === 0) return;
-
-                    elements.forEach(el => {
-                        const price = parseFloat(el.getAttribute('data-pp-price'));
-                        if (isNaN(price)) return;
-
-                        // Calculation logic delivered to the customer's site
-                        const localPrice = Math.round(price * ${pppMultiplier} * ${pppData[countryCode]?.rate || 1});
-                        const formatted = "${result.symbol}" + localPrice.toLocaleString();
-
-                        el.innerHTML = '✨ Local Offer: Residents of ${result.countryName} pay only <b>' + formatted + '</b>';
-                        el.style.display = 'inline-flex';
-                        el.style.alignItems = 'center';
-                        el.style.gap = '8px';
-                        el.style.background = 'rgba(37, 99, 235, 0.05)';
-                        el.style.color = '#2563eb';
-                        el.style.padding = '8px 16px';
-                        el.style.borderRadius = '99px';
-                        el.style.fontSize = '13px';
-                        el.style.fontWeight = '700';
-                        el.style.border = '1px solid rgba(37, 99, 235, 0.1)';
+                function inject() {
+                    const els = document.querySelectorAll('[data-pp-price]');
+                    els.forEach(el => {
+                        const p = parseFloat(el.getAttribute('data-pp-price'));
+                        if (isNaN(p)) return;
+                        const local = Math.round(p * ${pppMultiplier} * ${currentRate});
+                        el.innerHTML = '✨ Local Offer: Residents of ${result.countryName} pay only <b>${result.symbol}' + local.toLocaleString() + '</b>';
+                        el.style.cssText = "display:inline-flex; align-items:center; gap:8px; background:rgba(37,99,235,0.05); color:#2563eb; padding:8px 16px; border-radius:99px; font-size:13px; font-weight:700; border:1px solid rgba(37,99,235,0.1);";
                     });
                 }
-
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', injectWidget);
-                } else {
-                    injectWidget();
-                }
+                document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
             })();
         `);
-    } catch (error) {
-        console.error("Widget Runtime Error:", error);
-        res.status(500).send('console.error("PriceParity Widget Failed to Load");');
-    }
+    } catch (e) { res.status(500).send('console.error("Widget Load Error")'); }
 });
+
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI as string)
