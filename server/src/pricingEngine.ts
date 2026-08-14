@@ -156,11 +156,13 @@ export const getCountryList = () => {
     })).sort((a, b) => a.name.localeCompare(b.name));
 };
 
+// server/src/pricingEngine.ts
+
 export const calculatePPPPrice = (originalPrice: number, countryCode: string) => {
     const code = countryCode.toUpperCase();
     
-    // 1. Get data from the Master List
-    // Fallback: If country not in list, assume it's a Mid-Tier developing nation (0.4)
+    // 1. Get data from the Master List at the top of your file
+    // Fallback: If country not in list, assume it's a Mid-Tier nation
     const country = pppData[code] || { 
         name: new Intl.DisplayNames(['en'], { type: 'region' }).of(code) || code,
         multiplier: 0.4, 
@@ -168,15 +170,17 @@ export const calculatePPPPrice = (originalPrice: number, countryCode: string) =>
         rate: 1 
     };
     
-    // 2. The Math
+    // 2. Perform the calculations using the 'country' object data
     const suggestedPriceUSD = originalPrice * country.multiplier;
     const localAmount = suggestedPriceUSD * country.rate;
     
-  return {
+    return {
         suggestedPrice: Number(suggestedPriceUSD.toFixed(2)),
-        localPriceFormatted: String(`${symbol}${Math.round(localAmount).toLocaleString()}`),
+        // FIXED: Now correctly using 'country.symbol'
+        localPriceFormatted: `${country.symbol}${Math.round(localAmount).toLocaleString()}`,
+        // FIXED: Now correctly using 'country.multiplier'
         discountPercentage: Math.round((1 - country.multiplier) * 100),
-        symbol: String(country.symbol),
-        countryName: String(country.name)
+        symbol: country.symbol,
+        countryName: country.name
     };
 };

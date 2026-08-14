@@ -179,42 +179,41 @@ app.post('/api/create-checkout-session', protect, async (req: any, res) => {
 
 // This route will be called by "Widget" on other people's websites
 // 1. We use (req, res) as standard Express parameters
-
-app.get('/api/widget', async (req: any, res: any) => { // Added :any to parameters
+app.get('/api/widget', async (req: any, res: any) => {
     try {
         const originalPrice = Number(req.query.price);
+        
+        if (!originalPrice || isNaN(originalPrice)) {
+             res.setHeader('Content-Type', 'application/javascript');
+             return res.send('console.warn("PriceParity: No valid price provided in script");');
+        }
+
         const clientIp = requestIp.getClientIp(req) || "";
         const geo = geoip.lookup(clientIp);
         const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
 
-        // 1. Get result and tell TS to treat it as "any" to clear the property errors
-        const result = calculatePPPPrice(100, countryCode) as any;
+        // 1. Calculate result
+        const result = calculatePPPPrice(originalPrice, countryCode);
         
-        // 2. Fix the exchangeRate math (Cleaning the string to get just numbers)
-        const numericLocalPrice = Number(result.localPriceFormatted.replace(/[^0-9.]/g, ''));
-        const exchangeRate = numericLocalPrice / result.suggestedPrice;
-        const symbol = result.symbol;
-
+        // 2. Calculate stable multiplier and rates for the client-side script
+        const pppMultiplier = result.discountPercentage > 0 ? (result.suggestedPrice / originalPrice) : 1;
+        
         res.setHeader('Content-Type', 'application/javascript');
-        
         res.send(`
             (function() {
-                const multiplier = ${result.discountPercentage > 0 ? (result.suggestedPrice / 100) : 1};
-                const exchangeRate = ${exchangeRate};
-                const symbol = "${symbol}";
-                const country = "${result.countryName}";
+                function injectWidget() {
+                    const elements = document.querySelectorAll('[data-pp-price]');
+                    if (elements.length === 0) return;
 
-                function updatePrices() {
-                    const priceElements = document.querySelectorAll('[data-pp-price]');
-                    priceElements.forEach(el => {
-                        const originalPrice = parseFloat(el.getAttribute('data-pp-price'));
-                        if (isNaN(originalPrice)) return;
+                    elements.forEach(el => {
+                        const price = parseFloat(el.getAttribute('data-pp-price'));
+                        if (isNaN(price)) return;
 
-                        const fairUSD = originalPrice * multiplier;
-                        const fairLocal = Math.round(fairUSD * exchangeRate);
-                        const formatted = symbol + fairLocal.toLocaleString();
+                        // Calculation logic delivered to the customer's site
+                        const localPrice = Math.round(price * ${pppMultiplier} * ${pppData[countryCode]?.rate || 1});
+                        const formatted = "${result.symbol}" + localPrice.toLocaleString();
 
-                        el.innerHTML = ' ' + country + ' Offer: <b>' + formatted + '</b>';
+                        el.innerHTML = '✨ Local Offer: Residents of ${result.countryName} pay only <b>' + formatted + '</b>';
                         el.style.display = 'inline-flex';
                         el.style.alignItems = 'center';
                         el.style.gap = '8px';
@@ -222,22 +221,22 @@ app.get('/api/widget', async (req: any, res: any) => { // Added :any to paramete
                         el.style.color = '#2563eb';
                         el.style.padding = '8px 16px';
                         el.style.borderRadius = '99px';
-                        el.style.fontSize = '12px';
+                        el.style.fontSize = '13px';
                         el.style.fontWeight = '700';
                         el.style.border = '1px solid rgba(37, 99, 235, 0.1)';
                     });
                 }
 
                 if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', updatePrices);
+                    document.addEventListener('DOMContentLoaded', injectWidget);
                 } else {
-                    updatePrices();
+                    injectWidget();
                 }
             })();
         `);
     } catch (error) {
-        console.error("Widget Error:", error);
-        res.status(500).send('console.error("PriceParity Widget Load Failed");');
+        console.error("Widget Runtime Error:", error);
+        res.status(500).send('console.error("PriceParity Widget Failed to Load");');
     }
 });
 
