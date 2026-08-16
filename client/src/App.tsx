@@ -261,7 +261,7 @@ function App() {
               <div id="price-parity-display" className="mb-6 min-h-[40px] flex justify-center items-center">
                 <div data-pp-price="12"></div>
               </div>
-              <div className="inline-flex items-center justify-center h-9 rounded-full bg-blue-50/60 px-4 text-[10px] font-bold text-blue-600 uppercase tracking-wider leading-none border border-blue-100 gap-1.5 -translate-y-[2px]">
+              <div className="inline-flex items-center justify-center h-9 rounded-full bg-blue-50/60 px-4 text-[10px] font-bold text-blue-600 uppercase tracking-wider leading-none border border-blue-100 gap-1.5 -translate-y-[4px]">
                 <Sparkles size={12} fill="currentColor" /> The Future of Global Sales
               </div>
             </div>
