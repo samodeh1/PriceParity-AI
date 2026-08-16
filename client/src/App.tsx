@@ -257,7 +257,7 @@ function App() {
         <section className="max-w-6xl mx-auto px-6 pt-10 pb-16 text-center">
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
             {/* THIS IS THE WEDGIT BANNER PLACEHOLDER */}
-            <div className="flex-row items-center justify-center gap-3 flex-wrap w-full mb-6">
+            <div className="flex items-center justify-center gap-3 w-full mb-6 whitespace-nowrap">
               <div id="price-parity-display" className="mb-6 min-h-[40px] flex justify-center items-center">
                 <div data-pp-price="12"></div>
               </div>
