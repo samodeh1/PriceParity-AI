@@ -7,7 +7,7 @@ interface CountryData {
     rate: number;
 }
 
-export const pppData: Record<string, CountryData> = {
+export const pppData: Record<string, { name: string; multiplier: number; symbol: string; rate: number }> = {
      // =========================================================================
     // --- REGION: WEST AFRICA ---
     // =========================================================================
@@ -146,6 +146,8 @@ export const pppData: Record<string, CountryData> = {
     "MY": { name: "Malaysia", multiplier: 0.75, symbol: "RM", rate: 4.6 },
     "MN": { name: "Mongolia", multiplier: 0.55, symbol: "₮", rate: 3400 },
     "MM": { name: "Myanmar", multiplier: 0.3, symbol: "Ks", rate: 2100 },
+    // Default fallback for any other country
+    "DEFAULT": { name: "International", multiplier: 0.6, symbol: "$", rate: 1 }
 };
 
 // HELPER: To get alphabetical list for the Frontend dropdown
@@ -181,6 +183,7 @@ export const calculatePPPPrice = (originalPrice: number, countryCode: string) =>
         // FIXED: Now correctly using 'country.multiplier'
         discountPercentage: Math.round((1 - country.multiplier) * 100),
         symbol: country.symbol,
-        countryName: country.name
+        countryName: country.name,
+        rate: country.rate
     };
 };
