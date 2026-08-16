@@ -259,9 +259,9 @@ function App() {
             {/* THIS IS THE WEDGIT BANNER PLACEHOLDER */}
             <div id="price-parity-display" className="mb-6 min-h-[40px] flex justify-center items-center">
               <div data-pp-price="12"></div>
-              <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase mb-8">
+              
                <Sparkles size={12} fill="currentColor" /> The Future of Global Sales
-            </div>
+            
           </div>
             
             <h1 className="text-6xl md:text-8xl font-black text-slate-900 mb-8 leading-[0.9] tracking-tight">One price does not <br /> <span className="text-blue-600">fit the world.</span></h1>
