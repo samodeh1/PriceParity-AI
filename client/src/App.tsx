@@ -83,10 +83,15 @@ function App() {
   // --- UPDATED: LEMON SQUEEZY UPGRADE ---
   const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
     toast.loading(`Redirecting to secure ${type} checkout...`);
-    // Copy your specific Variant ID from Lemon Squeezy for this link
-    const testCheckoutUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/0284bbf8-fa59-4b75-8bf3-44bf251f7583";
+
+    // 1. YOUR LEMON SQUEEZY LINK (Paste the one you got from the dashboard)
+    const baseCheckoutUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/0284bbf8-fa59-4b75-8bf3-44bf251f7583";
+
+    // 2. Attach the user ID and Email so the backend Webhook knows who to upgrade
     const userId = user?._id || user?.id;
-    const finalUrl = `${testCheckoutUrl}?checkout[custom][user_id]=${userId}&checkout[email]=${user?.email}`;
+    const finalUrl = `${baseCheckoutUrl}?checkout[custom][user_id]=${userId}&checkout[email]=${user?.email}`;
+
+    // 3. Open the checkout immediately
     window.location.href = finalUrl;
   };
 
@@ -175,16 +180,18 @@ function App() {
     const query = new URLSearchParams(window.location.search);
     // When returning from Lemon Squeezy, our redirect URL included ?success=true
     if (query.get('success')) {
-      const verify = async () => {
-        const load = toast.loading("Syncing Pro access...");
+      const verifySession = async () => {
+        const load = toast.loading("Finalizing your Pro upgrade...");
         try {
-          // LS uses webhooks to update the DB, so we just need to refresh our profile
+          // Force a profile sync to see the new 'isPro' status from the database
           if (token) await syncProfile(token);
           toast.dismiss(load);
-          toast.success("Subscription Active! Welcome Pro.");
-        } catch (err) { toast.dismiss(load); }
+          toast.success("Subscription Active! Welcome to Pro.");
+        } catch (err) { 
+          toast.dismiss(load); 
+        }
       };
-      verify();
+      verifySession();
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, [token]);
@@ -249,7 +256,10 @@ function App() {
 
         <section className="max-w-6xl mx-auto px-6 pt-10 pb-16 text-center">
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-            <div id="price-parity-display" className="mb-6 min-h-[40px] flex justify-center items-center"></div>
+            {/* THIS IS THE WEDGIT BANNER PLACEHOLDER */}
+            <div id="price-parity-display" className="mb-6 min-h-[40px] flex justify-center items-center">
+              <div data-pp-price="12"></div>
+            </div>
             <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase mb-8">
                <Sparkles size={12} fill="currentColor" /> The Future of Global Sales
             </div>
