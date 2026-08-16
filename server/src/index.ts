@@ -26,7 +26,7 @@ const allowedOrigins: string[] = [
   process.env.CLIENT_URL || "https://priceparityai.com",
   "https://priceparityai.com",      // Version 1
   "https://www.priceparityai.com",  // Version 2 (The one causing the error)
-  "https://priceparityai.vercel.app", 
+  "https://price-parity-ai-2fbe.vercel.app", 
   "http://localhost:5173"
 ];
 
