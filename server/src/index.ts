@@ -25,9 +25,23 @@ dotenv.config();
 const app = express();
 
 // 1. CORS FIRST
+const allowedOrigins = [
+  "https://priceparityai.com",
+  "https://www.priceparityai.com",
+  "https://price-parity-ai-2fbe.vercel.app", // Check if this ID changed!
+  "http://localhost:5173"
+];
+
 app.use(cors({
-    origin: ["https://priceparityai.com", "https://www.priceparityai.com", "http://localhost:5173"],
-    credentials: true
+  origin: (origin, callback) => {
+    // This allows the Widget to work even from "no-origin" sources
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS blocked this domain'));
+    }
+  },
+  credentials: true
 }));
 
 // 2. JSON READER SECOND (Crucial! This makes req.body exist)
@@ -132,6 +146,7 @@ app.get('/api/widget', async (req: any, res: any) => {
         const pppMultiplier = result.discountPercentage > 0 ? (result.suggestedPrice / originalPrice) : 1;
         const currentRate = pppData[countryCode]?.rate || 1;
 
+        res.setHeader('Access-Control-Allow-Origin', '*'); 
         res.setHeader('Content-Type', 'application/javascript');
         res.send(`
             (function() {
