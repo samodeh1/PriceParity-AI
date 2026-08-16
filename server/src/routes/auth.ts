@@ -46,12 +46,21 @@ router.post('/google', async (req, res) => {
 
 // Get latest user info (The "Me" route)
 // Get latest user info (Required for syncProfile to work)
-router.get('/me', protect, async (req: any, res: any) => {
+
+
+router.post('/google', async (req, res) => {
+    // 1. Safety Guard: If body is missing, return an error instead of crashing
+    if (!req.body || !req.body.token) {
+        return res.status(400).json({ message: "No Google token provided" });
+    }
+
+    const { token } = req.body; 
+    
     try {
-        const user = await User.findById(req.user.id).select('-password');
+         const user = await User.findById(req.user.id).select('-password');
         res.json(user);
-    } catch (err) {
-        res.status(500).send('Server Error');
+    } catch (error) {
+        res.status(500).json({ message: "Google Auth Failed" });
     }
 });
 

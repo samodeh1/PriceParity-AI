@@ -17,31 +17,25 @@ import Strategy from './models/Strategy.js';
 import User from './models/User.js';
 
 dotenv.config();
-const app = express();
+
 
 // --- 1. MIDDLEWARE ---
 // server/src/index.ts
 
-const allowedOrigins: string[] = [
-  process.env.CLIENT_URL || "https://priceparityai.com",
-  "https://priceparityai.com",      // Version 1
-  "https://www.priceparityai.com",  // Version 2 (The one causing the error)
-  "https://priceparityai.vercel.app/", 
-  "http://localhost:5173"
-];
+const app = express();
 
-// Ensure your CORS setup uses this array as we discussed before
+// 1. CORS FIRST
 app.use(cors({
-    origin: (origin, callback) => {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            console.error("CORS Blocked for origin:", origin);
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: ["https://priceparityai.com", "https://www.priceparityai.com", "http://localhost:5173"],
     credentials: true
 }));
+
+// 2. JSON READER SECOND (Crucial! This makes req.body exist)
+app.use(express.json()); 
+
+// 3. ROUTES LAST
+app.use('/api/auth', authRoutes); // authRoutes is now below the JSON reader
+app.post('/api/calculate', protect, ...);
 
 // --- 2. CORE SaaS LOGIC: CALCULATION ---
 app.post('/api/calculate', protect, async (req: any, res: any) => {
@@ -52,7 +46,7 @@ app.post('/api/calculate', protect, async (req: any, res: any) => {
         if (!user) return res.status(404).json({ message: "User not found" });
 
         const pricing = calculatePPPPrice(price, country);
-        let pitch = "Upgrade to Pro to unlock AI Marketing Pitches 🚀";
+        let pitch = "Upgrade to Pro to unlock AI Marketing Pitches ";
         
         // Monetization Check: Only call OpenAI if user is a paid Pro member
         if (user.isPro) {
