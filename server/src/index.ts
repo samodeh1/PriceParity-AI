@@ -155,7 +155,7 @@ app.get('/api/widget', async (req: any, res: any) => {
                     if (target) {
                         const p = parseFloat(target.getAttribute('data-pp-price')) || ${originalPrice};
                         const local = Math.round(p * ${pppMultiplier} * ${currentRate});
-                        target.innerHTML = '✨ Local Offer: Residents of ${result.countryName} pay only <b>${result.symbol}' + local.toLocaleString() + '</b>';
+                        target.innerHTML = ' Local Offer: Residents of ${result.countryName} pay only <b>${result.symbol}' + local.toLocaleString() + '</b>';
                         target.style.cssText = "display:inline-flex; align-items:center; background:rgba(37,99,235,0.05); color:#2563eb; padding:8px 16px; border-radius:99px; font-size:13px; font-weight:700; border:1px solid rgba(37,99,235,0.1); animation: pulse 2s infinite;";
                     } else { setTimeout(inject, 500); }
                 }
