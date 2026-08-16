@@ -18,23 +18,18 @@ import User from './models/User.js';
 
 dotenv.config();
 
-
-// --- 1. MIDDLEWARE ---
-// server/src/index.ts
-
 const app = express();
 
-// 1. CORS FIRST
+// --- 1. MIDDLEWARE ---
 const allowedOrigins = [
   "https://priceparityai.com",
   "https://www.priceparityai.com",
-  "https://price-parity-ai-2fbe.vercel.app", // Check if this ID changed!
+  "https://price-parity-ai-2fbe.vercel.app", 
   "http://localhost:5173"
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // This allows the Widget to work even from "no-origin" sources
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -44,11 +39,15 @@ app.use(cors({
   credentials: true
 }));
 
-// 2. JSON READER SECOND (Crucial! This makes req.body exist)
-app.use(express.json()); 
+// Stores the raw string bytes on the request for Lemon Squeezy signature verification
+app.use(express.json({
+  verify: (req: any, res, buf) => {
+    req.rawBody = buf; 
+  }
+}));
 
-// 3. ROUTES LAST
-app.use('/api/auth', authRoutes); // authRoutes is now below the JSON reader
+// Route registered once right after parser middleware
+app.use('/api/auth', authRoutes); 
 
 // --- 2. CORE SaaS LOGIC: CALCULATION ---
 app.post('/api/calculate', protect, async (req: any, res: any) => {
@@ -61,7 +60,6 @@ app.post('/api/calculate', protect, async (req: any, res: any) => {
         const pricing = calculatePPPPrice(price, country);
         let pitch = "Upgrade to Pro to unlock AI Marketing Pitches ";
         
-        // Monetization Check: Only call OpenAI if user is a paid Pro member
         if (user.isPro) {
             pitch = await generateLocalizedPitch(productName, pricing.localPriceFormatted, country);
         }
@@ -89,15 +87,19 @@ app.post('/api/calculate', protect, async (req: any, res: any) => {
 });
 
 // --- 3. MONETIZATION: LEMON SQUEEZY WEBHOOK ---
-// This handles your automatic user upgrades after a global USD payment
 app.post('/api/webhook/lemonsqueezy', async (req: any, res: any) => {
     try {
-        const hmac = crypto.createHmac('sha256', process.env.LEMON_SQUEEZY_WEBHOOK_SECRET as string);
-        const digest = Buffer.from(hmac.update(JSON.stringify(req.body)).digest('hex'), 'utf8');
+        const secret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
+        if (!secret) {
+            console.error("Missing LEMON_SQUEEZY_WEBHOOK_SECRET env variable");
+            return res.status(500).send('Configuration Error');
+        }
+
+        const hmac = crypto.createHmac('sha256', secret);
+        const digest = Buffer.from(hmac.update(req.rawBody).digest('hex'), 'utf8');
         const signature = Buffer.from(req.get('X-Signature') || '', 'utf8');
 
-        // Security Handshake
-        if (!crypto.timingSafeEqual(digest, signature)) {
+        if (digest.length !== signature.length || !crypto.timingSafeEqual(digest, signature)) {
             return res.status(401).send('Invalid signature');
         }
 
@@ -106,7 +108,7 @@ app.post('/api/webhook/lemonsqueezy', async (req: any, res: any) => {
             const userId = meta.custom_data.user_id;
             
             const expiryDate = new Date();
-            expiryDate.setDate(expiryDate.getDate() + 30); // Valid for 30 days
+            expiryDate.setDate(expiryDate.getDate() + 30); 
 
             await User.findByIdAndUpdate(userId, { 
                 isPro: true, 
@@ -134,7 +136,7 @@ app.get('/api/strategies', protect, async (req: any, res: any) => {
 
 app.get('/api/countries', (req, res) => res.json(getCountryList()));
 
-// --- 5. SUBSCRIBER WIDGET ENGINE (PRO PLUS FEATURE) ---
+// --- 5. SUBSCRIBER WIDGET ENGINE ---
 app.get('/api/widget', async (req: any, res: any) => {
     try {
         const originalPrice = Number(req.query.price) || 12;
@@ -146,7 +148,6 @@ app.get('/api/widget', async (req: any, res: any) => {
         const pppMultiplier = result.discountPercentage > 0 ? (result.suggestedPrice / originalPrice) : 1;
         const currentRate = pppData[countryCode]?.rate || 1;
 
-        res.setHeader('Access-Control-Allow-Origin', '*'); 
         res.setHeader('Content-Type', 'application/javascript');
         res.send(`
             (function() {
@@ -166,13 +167,13 @@ app.get('/api/widget', async (req: any, res: any) => {
 });
 
 // --- 6. DATABASE & SERVER START ---
-mongoose.connect(process.env.MONGO_URI as string)
-    .then(() => console.log("PriceParity Live DB Connected"))
-    .catch(err => console.error("Database Error:", err));
-
-app.use('/api/auth', authRoutes);
-
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`PriceParity Engine Live on Port ${PORT}`);
-});
+
+mongoose.connect(process.env.MONGO_URI as string)
+    .then(() => {
+        console.log("PriceParity Live DB Connected");
+        app.listen(PORT, "0.0.0.0", () => {
+            console.log(`PriceParity Engine Live on Port ${PORT}`);
+        });
+    })
+    .catch(err => console.error("Database Error:", err));
