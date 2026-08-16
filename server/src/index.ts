@@ -35,7 +35,6 @@ app.use(express.json());
 
 // 3. ROUTES LAST
 app.use('/api/auth', authRoutes); // authRoutes is now below the JSON reader
-app.post('/api/calculate', protect, ...);
 
 // --- 2. CORE SaaS LOGIC: CALCULATION ---
 app.post('/api/calculate', protect, async (req: any, res: any) => {
