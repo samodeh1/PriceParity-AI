@@ -20,30 +20,27 @@ dotenv.config();
 const app = express();
 
 // --- 1. MIDDLEWARE ---
-// 1. Define your allowed origins clearly
+// server/src/index.ts
+
 const allowedOrigins: string[] = [
   process.env.CLIENT_URL || "https://priceparityai.com",
-  "https://priceparityai.vercel.app",
+  "https://priceparityai.com",      // Version 1
+  "https://www.priceparityai.com",  // Version 2 (The one causing the error)
+  "https://priceparityai.vercel.app", 
   "http://localhost:5173"
 ];
 
-// 2. The Type-Safe middleware
+// Ensure your CORS setup uses this array as we discussed before
 app.use(cors({
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-        // Allow requests with no origin (like mobile apps or local tests)
-        if (!origin) return callback(null, true);
-
-        if (allowedOrigins.indexOf(origin) !== -1) {
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
-            // A more professional error message
-            console.error(`CORS Blocked: ${origin} is not in allowed list.`);
+            console.error("CORS Blocked for origin:", origin);
             callback(new Error('Not allowed by CORS'));
         }
     },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "x-auth-token"]
+    credentials: true
 }));
 
 // --- 2. CORE SaaS LOGIC: CALCULATION ---
