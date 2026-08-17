@@ -85,7 +85,7 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
     toast.loading(`Opening secure ${type} checkout...`);
 
     const monthlyUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/0284bbf8-fa59-4b75-8bf3-44bf251f7583";
-    const annualUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/2026894"; // Updated to use the actual Variant ID
+    const annualUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/422dd43b-9a55-4c42-865c-f1b82a55a35f"; 
 
     const baseCheckoutUrl = type === 'annual' ? annualUrl : monthlyUrl;
     const userId = user?._id || user?.id;
