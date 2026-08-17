@@ -82,7 +82,7 @@ function App() {
 
   // --- UPDATED: LEMON SQUEEZY UPGRADE ---
 const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
-    toast.loading(`Redirecting to secure ${type} checkout...`);
+    toast.loading(`Opening secure ${type} checkout...`);
 
     const monthlyUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/0284bbf8-fa59-4b75-8bf3-44bf251f7583";
     const annualUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/422dd43b-9a55-4c42-865c-f1b82a55a35f";
@@ -93,15 +93,17 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
     // Check if the current state for country is Nigeria
     const isNigeria = country === 'NG';
 
-    // Build the URL with User ID and Email
+    // 1. Build the base URL with User ID and Email
     let finalUrl = `${baseCheckoutUrl}?checkout[custom][user_id]=${userId}&checkout[email]=${user?.email}`;
 
-    // APPLY THE DISCOUNT
+    // 2. CORRECTED: Apply the discount using the specific Lemon Squeezy key
     if (isNigeria) {
-      console.log("Applying Nigeria Fair Price Discount...");
-      // We use the actual code from your screenshot: KYMTA3MG
-      finalUrl += `&discount_code=KYMTA3MG`; 
+      // The key MUST be 'checkout[discount_code]'
+      finalUrl += `&checkout[discount_code]=KYMTA3MG`; 
     }
+
+    // 3. Log it to your console so you can see the final link for debugging
+    console.log("Final Checkout URL:", finalUrl);
 
     window.location.href = finalUrl;
 };
