@@ -85,8 +85,8 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
     toast.loading(`Redirecting to secure ${type} checkout...`);
 
     // 1. Replace these with your actual IDs from Lemon Squeezy
-    const monthlyUrl = "https://priceparityai.lemonsqueezy.com/buy/YOUR_MONTHLY_ID";
-    const annualUrl = "https://priceparityai.lemonsqueezy.com/buy/YOUR_ANNUAL_ID";
+    const monthlyUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/0284bbf8-fa59-4b75-8bf3-44bf251f7583";
+    const annualUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/422dd43b-9a55-4c42-865c-f1b82a55a35f";
 
     // 2. THIS IS THE LINE THAT FIXES THE ERROR: We actually USE the 'type' variable
     const baseCheckoutUrl = type === 'annual' ? annualUrl : monthlyUrl;
