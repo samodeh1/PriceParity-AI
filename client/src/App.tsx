@@ -254,23 +254,26 @@ function App() {
           <button onClick={() => setIsAuthOpen(true)} className="bg-slate-900 text-white px-6 py-2 rounded-full text-sm font-bold shadow-xl active:scale-95 transition-all">Sign In</button>
         </nav>
 
-        <section className="max-w-6xl mx-auto px-6 pt-10 pb-16 text-center">
+        {/* --- HERO SECTION --- */}
+      <section className="max-w-6xl mx-auto px-6 pt-2 pb-12 text-center relative z-10">
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
           
-          {/* THIS IS THE WEDGIT BANNER PLACEHOLDER CONTAINER */}
-          <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
-            {/* 1. Local Offer Banner */}
-            <div id="price-parity-display" className="min-h-[40px] flex items-center">
-              <div data-pp-price="12"></div>
+          {/* FLEX CONTAINER: Moves both badges to one line */}
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
+            
+            {/* 1. LOCAL OFFER BADGE (Self-filling Widget) */}
+            <div data-pp-price="12" className="flex items-center">
+              {/* The widget script will inject the offer text here */}
             </div>
 
-            {/* 2. Feature Tag */}
-            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase">
+            {/* 2. THE FUTURE BADGE */}
+            <div className="inline-flex items-center gap-2 bg-blue-50/50 text-blue-600 px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase border border-blue-100">
               <Sparkles size={12} fill="currentColor" /> The Future of Global Sales
             </div>
           </div>
 
-          <h1 className="text-6xl md:text-8xl font-black text-slate-900 mb-8 leading-[0.9] tracking-tight">
+          {/* HERO TITLE (Everything else is now pushed up because pt-10 is now pt-2) */}
+          <h1 className="text-6xl md:text-8xl font-black text-slate-900 mb-6 leading-[0.9] tracking-tight">
             One price does not <br /> <span className="text-blue-600">fit the world.</span>
           </h1>
             <p className="text-slate-500 text-xl md:text-2xl mb-12 max-w-2xl mx-auto leading-relaxed">AI optimization for local economies in 20+ countries.</p>
