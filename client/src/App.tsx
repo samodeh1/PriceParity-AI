@@ -255,15 +255,24 @@ function App() {
         </nav>
 
         <section className="max-w-6xl mx-auto px-6 pt-10 pb-16 text-center">
-          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-            {/* THIS IS THE WEDGIT BANNER PLACEHOLDER */}
-            <div id="price-parity-display" className="mb-6 min-h-[40px] flex justify-center items-center">
+        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+          
+          {/* THIS IS THE WEDGIT BANNER PLACEHOLDER CONTAINER */}
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
+            {/* 1. Local Offer Banner */}
+            <div id="price-parity-display" className="min-h-[40px] flex items-center">
               <div data-pp-price="12"></div>
             </div>
-            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase mb-8">
-               <Sparkles size={12} fill="currentColor" /> The Future of Global Sales
+
+            {/* 2. Feature Tag */}
+            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase">
+              <Sparkles size={12} fill="currentColor" /> The Future of Global Sales
             </div>
-            <h1 className="text-6xl md:text-8xl font-black text-slate-900 mb-8 leading-[0.9] tracking-tight">One price does not <br /> <span className="text-blue-600">fit the world.</span></h1>
+          </div>
+
+          <h1 className="text-6xl md:text-8xl font-black text-slate-900 mb-8 leading-[0.9] tracking-tight">
+            One price does not <br /> <span className="text-blue-600">fit the world.</span>
+          </h1>
             <p className="text-slate-500 text-xl md:text-2xl mb-12 max-w-2xl mx-auto leading-relaxed">AI optimization for local economies in 20+ countries.</p>
             <button onClick={() => setIsAuthOpen(true)} className="group bg-blue-600 text-white px-10 py-6 rounded-[2rem] font-black text-xl hover:bg-blue-700 shadow-2xl transition-all active:scale-95 flex items-center gap-3 mx-auto">Get Started Free <ArrowRight /></button>
             <p className="mt-10 text-slate-400 text-xs font-bold uppercase tracking-[0.2em]">Trusted by Digital Creators Worldwide</p>
