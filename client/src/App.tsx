@@ -81,19 +81,26 @@ function App() {
   };
 
   // --- UPDATED: LEMON SQUEEZY UPGRADE ---
-  const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
-    toast.loading(`Redirecting to secure ${type} checkout...`);
+const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
+  // 1. Your Base Product URL
+  const baseCheckoutUrl = "https://priceparityai.lemonsqueezy.com/buy/your-uuid-here";
+  
+  // 2. Identify the user
+  const userId = user?._id || user?.id;
+  
+  // 3. Detect if they are from Nigeria (Logic reads your banner text)
+  const isNigeria = document.getElementById('price-parity-display')?.innerText.includes('Nigeria');
 
-    // 1. YOUR LEMON SQUEEZY LINK (Paste the one you got from the dashboard)
-    const baseCheckoutUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/0284bbf8-fa59-4b75-8bf3-44bf251f7583";
+  let finalUrl = `${baseCheckoutUrl}?checkout[custom][user_id]=${userId}&checkout[email]=${user?.email}`;
 
-    // 2. Attach the user ID and Email so the backend Webhook knows who to upgrade
-    const userId = user?._id || user?.id;
-    const finalUrl = `${baseCheckoutUrl}?checkout[custom][user_id]=${userId}&checkout[email]=${user?.email}`;
+  // 4. Automatically attach the discount code if they are in Nigeria
+  if (isNigeria) {
+    // Replace 'FAIRPRICE' with the exact code you typed in the dashboard
+    finalUrl += `&checkout[discount_code]=KYMTA3MG`; 
+  }
 
-    // 3. Open the checkout immediately
-    window.location.href = finalUrl;
-  };
+  window.location.href = finalUrl;
+};
 
   const handleImplement = () => {
     if (!user?.isPro) {
