@@ -87,14 +87,12 @@ app.post('/api/calculate', protect, async (req: any, res: any) => {
 });
 
 // --- 3. MONETIZATION: LEMON SQUEEZY WEBHOOK ---
-// --- MONETIZATION: LEMON SQUEEZY WEBHOOK ---
-app.post('/api/webhook/lemonsqueezy', async (req: any, res: any) => {
+app.post('/api/webhook/lemonsqueezy', async (req: any, res) => {
     try {
         const hmac = crypto.createHmac('sha256', process.env.LEMON_SQUEEZY_WEBHOOK_SECRET as string);
         const digest = Buffer.from(hmac.update(JSON.stringify(req.body)).digest('hex'), 'utf8');
         const signature = Buffer.from(req.get('X-Signature') || '', 'utf8');
 
-        // 1. Security Check
         if (!crypto.timingSafeEqual(digest, signature)) {
             return res.status(401).send('Invalid signature');
         }
@@ -102,27 +100,28 @@ app.post('/api/webhook/lemonsqueezy', async (req: any, res: any) => {
         const { meta, data } = req.body;
         const eventName = meta.event_name;
 
-        // 2. Fulfillment Logic
         if (eventName === 'order_created' || eventName === 'subscription_created') {
             const userId = meta.custom_data.user_id;
-            const variantId = data.attributes.variant_id.toString(); // Get the ID of what was bought
-
-            // YOUR SPECIFIC IDS
+            
+            // 1. IDENTIFY THE PLAN (Use the Variant ID from Lemon Squeezy)
+            const variantId = data.attributes.variant_id.toString();
+            
+            // 2. SET DURATION (Variant IDs from Lemon Squeezy)
             const ANNUAL_VARIANT_ID = "2026894"; 
             
             const expiryDate = new Date();
-
+            
             if (variantId === ANNUAL_VARIANT_ID) {
-                // ADD 1 YEAR
+                // If it's the annual plan, add 1 year
                 expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-                console.log(`Processing ANNUAL upgrade for user: ${userId}`);
+                console.log("Processing ANNUAL upgrade for user:", userId);
             } else {
-                // ADD 30 DAYS
+                // Otherwise, default to 30 days
                 expiryDate.setDate(expiryDate.getDate() + 30);
-                console.log(`Processing MONTHLY upgrade for user: ${userId}`);
+                console.log("Processing MONTHLY upgrade for user:", userId);
             }
 
-            // 3. Update the user in MongoDB
+            // 3. Update the database
             await User.findByIdAndUpdate(userId, { 
                 isPro: true, 
                 proExpiry: expiryDate 
@@ -130,7 +129,6 @@ app.post('/api/webhook/lemonsqueezy', async (req: any, res: any) => {
             
             console.log(`Fulfillment Success: User ${userId} active until ${expiryDate.toLocaleDateString()}`);
         }
-
         res.status(200).send('Webhook processed');
     } catch (err) {
         console.error('Webhook Error:', err);
