@@ -162,28 +162,17 @@ export const getCountryList = () => {
 
 export const calculatePPPPrice = (originalPrice: number, countryCode: string) => {
     const code = countryCode.toUpperCase();
+    const country = pppData[code] || pppData["DEFAULT"];
     
-    // 1. Get data from the Master List at the top of your file
-    // Fallback: If country not in list, assume it's a Mid-Tier nation
-    const country = pppData[code] || { 
-        name: new Intl.DisplayNames(['en'], { type: 'region' }).of(code) || code,
-        multiplier: 0.4, 
-        symbol: "$", 
-        rate: 1 
-    };
-    
-    // 2. Perform the calculations using the 'country' object data
     const suggestedPriceUSD = originalPrice * country.multiplier;
     const localAmount = suggestedPriceUSD * country.rate;
-    
+
     return {
         suggestedPrice: Number(suggestedPriceUSD.toFixed(2)),
-        // FIXED: Now correctly using 'country.symbol'
         localPriceFormatted: `${country.symbol}${Math.round(localAmount).toLocaleString()}`,
-        // FIXED: Now correctly using 'country.multiplier'
         discountPercentage: Math.round((1 - country.multiplier) * 100),
         symbol: country.symbol,
-        countryName: country.name,
-        rate: country.rate
+        countryName: country.name
     };
+    
 };
