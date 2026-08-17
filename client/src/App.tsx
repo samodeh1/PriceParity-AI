@@ -84,29 +84,27 @@ function App() {
 const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
     toast.loading(`Redirecting to secure ${type} checkout...`);
 
-    // 1. Replace these with your actual IDs from Lemon Squeezy
     const monthlyUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/0284bbf8-fa59-4b75-8bf3-44bf251f7583";
     const annualUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/422dd43b-9a55-4c42-865c-f1b82a55a35f";
 
-    // 2. THIS IS THE LINE THAT FIXES THE ERROR: We actually USE the 'type' variable
     const baseCheckoutUrl = type === 'annual' ? annualUrl : monthlyUrl;
     const userId = user?._id || user?.id;
-    // 2. LOGIC FIX: Check the 'country' state directly
-    // If the country state is 'NG' (Nigeria), we prepare the discount
+    
+    // Check if the current state for country is Nigeria
     const isNigeria = country === 'NG';
 
-    // 3. BUILD THE URL
-    // We start with the base and user ID
+    // Build the URL with User ID and Email
     let finalUrl = `${baseCheckoutUrl}?checkout[custom][user_id]=${userId}&checkout[email]=${user?.email}`;
 
-    // 4. ATTACH THE DISCOUNT
+    // APPLY THE DISCOUNT
     if (isNigeria) {
-      // Ensure 'FAIRPRICE' matches the code you created in the LS Dashboard
+      console.log("Applying Nigeria Fair Price Discount...");
+      // We use the actual code from your screenshot: KYMTA3MG
       finalUrl += `&discount_code=KYMTA3MG`; 
     }
 
     window.location.href = finalUrl;
-  };
+};
 
   const handleImplement = () => {
     if (!user?.isPro) {
