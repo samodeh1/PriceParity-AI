@@ -82,25 +82,27 @@ function App() {
 
   // --- UPDATED: LEMON SQUEEZY UPGRADE ---
 const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
-  // 1. Your Base Product URL
-  const baseCheckoutUrl = "https://priceparityai.lemonsqueezy.com/buy/your-uuid-here";
-  
-  // 2. Identify the user
-  const userId = user?._id || user?.id;
-  
-  // 3. Detect if they are from Nigeria (Logic reads your banner text)
-  const isNigeria = document.getElementById('price-parity-display')?.innerText.includes('Nigeria');
+    toast.loading(`Redirecting to secure ${type} checkout...`);
 
-  let finalUrl = `${baseCheckoutUrl}?checkout[custom][user_id]=${userId}&checkout[email]=${user?.email}`;
+    // 1. Replace these with your actual IDs from Lemon Squeezy
+    const monthlyUrl = "https://priceparityai.lemonsqueezy.com/buy/YOUR_MONTHLY_ID";
+    const annualUrl = "https://priceparityai.lemonsqueezy.com/buy/YOUR_ANNUAL_ID";
 
-  // 4. Automatically attach the discount code if they are in Nigeria
-  if (isNigeria) {
-    // Replace 'FAIRPRICE' with the exact code you typed in the dashboard
-    finalUrl += `&checkout[discount_code]=KYMTA3MG`; 
-  }
+    // 2. THIS IS THE LINE THAT FIXES THE ERROR: We actually USE the 'type' variable
+    const baseCheckoutUrl = type === 'annual' ? annualUrl : monthlyUrl;
 
-  window.location.href = finalUrl;
-};
+    const userId = user?._id || user?.id;
+    const isNigeria = document.getElementById('price-parity-display')?.innerText.includes('Nigeria');
+
+    let finalUrl = `${baseCheckoutUrl}?checkout[custom][user_id]=${userId}&checkout[email]=${user?.email}`;
+
+    // 3. Apply the fair-pricing discount code
+    if (isNigeria) {
+      finalUrl += `&checkout[discount_code]=KYMTA3MG`; 
+    }
+
+    window.location.href = finalUrl;
+  };
 
   const handleImplement = () => {
     if (!user?.isPro) {
