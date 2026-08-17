@@ -87,47 +87,35 @@ app.post('/api/calculate', protect, async (req: any, res: any) => {
 });
 
 // --- 3. MONETIZATION: LEMON SQUEEZY WEBHOOK ---
-app.post('/api/webhook/lemonsqueezy', async (req: any, res) => {
+app.post('/api/webhook/lemonsqueezy', async (req: any, res: any) => {
     try {
-        const hmac = crypto.createHmac('sha256', process.env.LEMON_SQUEEZY_WEBHOOK_SECRET as string);
-        const digest = Buffer.from(hmac.update(JSON.stringify(req.body)).digest('hex'), 'utf8');
+        const secret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
+        if (!secret) {
+            console.error("Missing LEMON_SQUEEZY_WEBHOOK_SECRET env variable");
+            return res.status(500).send('Configuration Error');
+        }
+
+        const hmac = crypto.createHmac('sha256', secret);
+        const digest = Buffer.from(hmac.update(req.rawBody).digest('hex'), 'utf8');
         const signature = Buffer.from(req.get('X-Signature') || '', 'utf8');
 
-        if (!crypto.timingSafeEqual(digest, signature)) {
+        if (digest.length !== signature.length || !crypto.timingSafeEqual(digest, signature)) {
             return res.status(401).send('Invalid signature');
         }
 
-        const { meta, data } = req.body;
-        const eventName = meta.event_name;
-
-        if (eventName === 'order_created' || eventName === 'subscription_created') {
+        const { meta } = req.body;
+        if (meta.event_name === 'order_created' || meta.event_name === 'subscription_created') {
             const userId = meta.custom_data.user_id;
             
-            // 1. IDENTIFY THE PLAN (Use the Variant ID from Lemon Squeezy)
-            const variantId = data.attributes.variant_id.toString();
-            
-            // 2. SET DURATION (Variant IDs from Lemon Squeezy)
-            const ANNUAL_VARIANT_ID = "2026894"; 
-            
             const expiryDate = new Date();
-            
-            if (variantId === ANNUAL_VARIANT_ID) {
-                // If it's the annual plan, add 1 year
-                expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-                console.log("Processing ANNUAL upgrade for user:", userId);
-            } else {
-                // Otherwise, default to 30 days
-                expiryDate.setDate(expiryDate.getDate() + 30);
-                console.log("Processing MONTHLY upgrade for user:", userId);
-            }
+            expiryDate.setDate(expiryDate.getDate() + 30); 
 
-            // 3. Update the database
             await User.findByIdAndUpdate(userId, { 
                 isPro: true, 
                 proExpiry: expiryDate 
             });
             
-            console.log(`Fulfillment Success: User ${userId} active until ${expiryDate.toLocaleDateString()}`);
+            console.log(`Global Fulfillment: User ${userId} upgraded via Lemon Squeezy.`);
         }
         res.status(200).send('Webhook processed');
     } catch (err) {
