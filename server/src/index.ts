@@ -103,12 +103,24 @@ app.post('/api/webhook/lemonsqueezy', async (req: any, res: any) => {
             return res.status(401).send('Invalid signature');
         }
 
-        const { meta } = req.body;
+        const { meta, data } = req.body;
         if (meta.event_name === 'order_created' || meta.event_name === 'subscription_created') {
             const userId = meta.custom_data.user_id;
             
+            // Extract the variant ID safely from the payload relationships or attributes
+            const variantId = String(data?.attributes?.variant_id || data?.relationships?.variant?.data?.id || "");
+            const isYearly = variantId === "2026894";
+
             const expiryDate = new Date();
-            expiryDate.setDate(expiryDate.getDate() + 30); 
+            if (isYearly) {
+                // Award 365 days for your Annual Plan
+                expiryDate.setDate(expiryDate.getDate() + 365);
+                console.log(`Processing Annual Plan (ID: ${variantId}) for User ${userId}`);
+            } else {
+                // Default to 30 days for your Monthly Plan
+                expiryDate.setDate(expiryDate.getDate() + 30);
+                console.log(`Processing Monthly Plan (ID: ${variantId}) for User ${userId}`);
+            }
 
             await User.findByIdAndUpdate(userId, { 
                 isPro: true, 
