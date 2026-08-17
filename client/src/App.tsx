@@ -90,15 +90,19 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
 
     // 2. THIS IS THE LINE THAT FIXES THE ERROR: We actually USE the 'type' variable
     const baseCheckoutUrl = type === 'annual' ? annualUrl : monthlyUrl;
-
     const userId = user?._id || user?.id;
-    const isNigeria = document.getElementById('price-parity-display')?.innerText.includes('Nigeria');
+    // 2. LOGIC FIX: Check the 'country' state directly
+    // If the country state is 'NG' (Nigeria), we prepare the discount
+    const isNigeria = country === 'NG';
 
+    // 3. BUILD THE URL
+    // We start with the base and user ID
     let finalUrl = `${baseCheckoutUrl}?checkout[custom][user_id]=${userId}&checkout[email]=${user?.email}`;
 
-    // 3. Apply the fair-pricing discount code
+    // 4. ATTACH THE DISCOUNT
     if (isNigeria) {
-      finalUrl += `&checkout[discount_code]=KYMTA3MG`; 
+      // Ensure 'FAIRPRICE' matches the code you created in the LS Dashboard
+      finalUrl += `&discount_code=KYMTA3MG`; 
     }
 
     window.location.href = finalUrl;
