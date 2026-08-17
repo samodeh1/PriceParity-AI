@@ -174,5 +174,4 @@ export const calculatePPPPrice = (originalPrice: number, countryCode: string) =>
         symbol: country.symbol,
         countryName: country.name
     };
-    
 };
