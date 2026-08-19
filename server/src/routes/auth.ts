@@ -49,8 +49,21 @@ router.post('/google', async (req, res) => {
 router.get('/me', protect, async (req: any, res: any) => {
     try {
         const user = await User.findById(req.user.id).select('-password');
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        //  AUTOMATIC DYNAMIC DOWNGRADE GUARD
+        const now = new Date();
+        const hasExpired = user.proExpiry && new Date(user.proExpiry) < now;
+
+        if (hasExpired && user.isPro) {
+            user.isPro = false;
+            await user.save(); // Permanently saves the downgraded state in MongoDB Atlas
+            console.log(`Auth Guard: Automatically downgraded expired user profile ${user._id}`);
+        }
+
         res.json(user);
     } catch (err) {
+        console.error('Auth Me Error:', err);
         res.status(500).send('Server Error');
     }
 });

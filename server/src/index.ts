@@ -57,9 +57,20 @@ app.post('/api/calculate', protect, async (req: any, res: any) => {
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: "User not found" });
 
+        //  TIMEZONE-SAFE EXPIRATION VALIDATION CHECK
+        const now = new Date();
+        const hasExpired = user.proExpiry && new Date(user.proExpiry) < now;
+
+        if (hasExpired && user.isPro) {
+            user.isPro = false;
+            await user.save(); // Revokes access in MongoDB permanently
+            console.log(`Fulfillment Guard: Revoked expired access for User ${user._id}`);
+        }
+
         const pricing = calculatePPPPrice(price, country);
         let pitch = "Upgrade to Pro to unlock AI Marketing Pitches ";
         
+        // Monetization Check: Evaluates your fresh, validated user instance status
         if (user.isPro) {
             pitch = await generateLocalizedPitch(productName, pricing.localPriceFormatted, country);
         }
@@ -78,13 +89,14 @@ app.post('/api/calculate', protect, async (req: any, res: any) => {
             ...pricing,
             productName,
             localizedPitch: pitch,
-            isPro: user.isPro 
+            isPro: user.isPro // Returns false back to frontend if they expired!
         });
     } catch (error) {
         console.error("Calculation Error:", error);
         res.status(500).json({ error: "Error generating strategy" });
     }
 });
+
 
 // --- 3. MONETIZATION: LEMON SQUEEZY WEBHOOK ---
 app.post('/api/webhook/lemonsqueezy', async (req: any, res: any) => {
@@ -128,13 +140,22 @@ app.post('/api/webhook/lemonsqueezy', async (req: any, res: any) => {
             });
             
             console.log(`Global Fulfillment: User ${userId} upgraded via Lemon Squeezy.`);
+        } 
+        // ➡️ NEWLY INJECTED CANCELLATION BLOCK
+        else if (meta.event_name === 'subscription_cancelled') {
+            const userId = meta.custom_data.user_id;
+            
+            // This logs it directly into your Render dashboard terminal console text logs
+            console.log(`Global Cancellation Webhook: User ${userId} cancelled auto-renew. Access expires on schedule.`);
         }
+
         res.status(200).send('Webhook processed');
     } catch (err) {
         console.error('Webhook Error:', err);
         res.status(500).send('Internal Server Error');
     }
 });
+
 
 // --- 4. DATA HISTORY & UTILITIES ---
 app.get('/api/strategies', protect, async (req: any, res: any) => {
