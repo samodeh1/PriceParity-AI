@@ -99,7 +99,7 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
     // (This uses the code we verified earlier: KYMTA3MG)
     const isNigeria = country === 'NG';
     if (isNigeria) {
-      finalUrl += `&checkout[discount_code]=KYMTA3MG`; 
+      finalUrl += `&checkout[discount_code]=C4MZQWOA`; 
     }
 
     // 5. Open the real checkout
