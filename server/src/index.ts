@@ -121,7 +121,7 @@ app.post('/api/webhook/lemonsqueezy', async (req: any, res: any) => {
             
             // Extract the variant ID safely from the payload relationships or attributes
             const variantId = String(data?.attributes?.variant_id || data?.relationships?.variant?.data?.id || "");
-            const isYearly = variantId === "2026894";
+            const isYearly = variantId === "2064330";
 
             const expiryDate = new Date();
             if (isYearly) {

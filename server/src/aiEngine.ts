@@ -24,6 +24,6 @@ export const generateLocalizedPitch = async (productName: string, localPrice: st
 
         return response.choices[0].message.content;
     } catch (error) {
-        return `Get it now for just ${localPrice}! 🚀`;
+        return `Get it now for just ${localPrice}!`;
     }
 };
