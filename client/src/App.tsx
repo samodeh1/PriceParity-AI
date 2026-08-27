@@ -82,31 +82,29 @@ function App() {
 
   // --- UPDATED: LEMON SQUEEZY UPGRADE ---
 const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
-    toast.loading(`Opening secure ${type} checkout...`);
+    toast.loading(`Connecting to secure ${type} checkout...`);
 
-    const monthlyUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/0284bbf8-fa59-4b75-8bf3-44bf251f7583";
-    const annualUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/422dd43b-9a55-4c42-865c-f1b82a55a35f"; 
+    // 1. YOUR REAL LIVE LINKS
+    const monthlyUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84";
+    const annualUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/1b4152a4-5463-4208-9cd8-50a9f3ec7a89";
 
+    // 2. Select the correct link based on the user's click
     const baseCheckoutUrl = type === 'annual' ? annualUrl : monthlyUrl;
-    const userId = user?._id || user?.id;
-    
-    // Check if the current state for country is Nigeria
-    const isNigeria = country === 'NG';
 
-    // 1. Build the base URL with User ID and Email
+    // 3. Metadata Handshake: Pass User ID for the Webhook to find
+    const userId = user?._id || user?.id;
     let finalUrl = `${baseCheckoutUrl}?checkout[custom][user_id]=${userId}&checkout[email]=${user?.email}`;
 
-    // 2. CORRECTED: Apply the discount using the specific Lemon Squeezy key
+    // 4. Automated Fair-Price Discount for Nigeria
+    // (This uses the code we verified earlier: KYMTA3MG)
+    const isNigeria = country === 'NG';
     if (isNigeria) {
-      // The key MUST be 'checkout[discount_code]'
       finalUrl += `&checkout[discount_code]=KYMTA3MG`; 
     }
 
-    // 3. Log it to your console so you can see the final link for debugging
-    console.log("Final Checkout URL:", finalUrl);
-
+    // 5. Open the real checkout
     window.location.href = finalUrl;
-};
+  };
 
   const handleImplement = () => {
     if (!user?.isPro) {
