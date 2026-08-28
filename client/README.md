@@ -1,4 +1,4 @@
-[PriceParity AI Dashboard](client/dashboard_preview.jpg)
+[PriceParity AI Dashboard](client/public/dashboard.png)
 
 PriceParity AI – Global Revenue Optimization Engine
 PriceParity AI is an intelligent, Generative AI platform that helps digital creators and SaaS founders scale their sales globally. By leveraging Purchasing Power Parity (PPP) data, the app automatically adjusts product pricing for different economies and uses OpenAI to generate culturally-relevant marketing copy.
