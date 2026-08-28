@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, BarChart3, Globe, Lock, ShieldCheck, Sparkles, Zap, LifeBuoy, Mail, MessageSquare } from 'lucide-react';
+import { ArrowRight, BarChart3, Lock, ShieldCheck, Sparkles, Zap, LifeBuoy, Mail, MessageSquare } from 'lucide-react';
 import { useEffect, useState } from "react";
 import toast, { Toaster } from 'react-hot-toast';
 import { Auth } from "./components/Auth";
@@ -260,7 +260,8 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
 
         <nav className="py-4 px-6 max-w-7xl mx-auto w-full flex justify-between items-center sticky top-0 z-40 bg-white/60 backdrop-blur-md">
           <div className="flex items-center gap-2 font-black text-2xl tracking-tighter uppercase italic text-slate-900">
-            <Globe className="text-blue-600" /> PRICE<span className="text-blue-600">PARITY</span>
+            <img src="/logo.png" alt="PriceParity Logo" className="w-10 h-10 object-contain drop-shadow-sm" />
+              PRICE<span className="text-blue-600">PARITY</span>
           </div>
           <button onClick={() => setIsAuthOpen(true)} className="bg-slate-900 text-white px-6 py-2 rounded-full text-sm font-bold shadow-xl active:scale-95 transition-all">Sign In</button>
         </nav>
@@ -345,7 +346,7 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
       
       <nav className="py-4 px-6 max-w-7xl mx-auto flex justify-between items-center sticky top-0 z-40 bg-white/60 backdrop-blur-md">
         <div className="flex items-center gap-2 font-black text-2xl tracking-tighter uppercase italic">
-          <Globe className="text-blue-600" /> <span className="text-blue-600"></span>
+          <img src="/logo.png" alt="PriceParity Logo" className="w-10 h-10 object-contain drop-shadow-sm" />
         </div>
         <div className="flex items-center gap-4">
           {!user?.isPro && (
