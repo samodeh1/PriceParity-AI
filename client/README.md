@@ -40,7 +40,7 @@ cd client && npm install
 cd ../server && npm install
 Environment Variables (.env):
 Create a .env in the /server folder with:
-MONGO_URI, JWT_SECRET, OPENAI_API_KEY, PAYSTACK_SECRET_KEY, CLIENT_URL
+MONGO_URI, JWT_SECRET, OPENAI_API_KEY, LEMONSQUEEZY_SECRET_KEY, CLIENT_URL
 Run Dev Mode:
 code
 Bash
