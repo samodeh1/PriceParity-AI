@@ -17,7 +17,7 @@ export const generateLocalizedPitch = async (productName: string, localPrice: st
             1. Identify the primary language spoken in ${country}.
             2. Write a punchy well detail sales pitch in that NATIVE language.
             3. Use a culturally relevant emoji.
-            4. Give a space between the native language and the English translation below it so it's can be easy to read.
+            4. Then, provide the English translation below it.
             5. Do not mention USD.
 
             FORMAT:
