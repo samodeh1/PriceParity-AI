@@ -53,4 +53,4 @@ cd client && npm run dev
 Samuel Odeh
 Fullstack Software Engineer | SaaS Founder
 Portfolio: www.richtec.com.ng
-LinkedIn: Connect with me
+LinkedIn: www.linkedin.com/in/samuel-odeh-870415248
