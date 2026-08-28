@@ -17,7 +17,7 @@ export const generateLocalizedPitch = async (productName: string, localPrice: st
             1. Identify the primary language spoken in ${country}.
             2. Write a punchy well detail sales pitch in that NATIVE language.
             3. Use a culturally relevant emoji.
-            4. Give one line space then, provide the English translation below it.
+            4. Give a space between the native language and the English translation below it so it's can be easy to read.
             5. Do not mention USD.
 
             FORMAT:
@@ -37,23 +37,3 @@ export const generateLocalizedPitch = async (productName: string, localPrice: st
         return `Get it now for just ${localPrice}!`;
     }
 };
-// export const generateLocalizedPitch = async (productName: string, localPrice: string, country: string) => {
-//     try {
-//         const prompt = `
-//             Write a punchy 2-sentence sales pitch for "${productName}".
-//             The price for customers in ${country} is exactly ${localPrice}.
-//             1. Mention the price "${localPrice}" exactly as written.
-//             2. Use a culturally relevant emoji for ${country}.
-//             3. Do not mention USD.
-//         `;
-
-//         const response = await openai.chat.completions.create({
-//             model: "gpt-4o-mini", 
-//             messages: [{ role: "user", content: prompt }],
-//         });
-
-//         return response.choices[0].message.content;
-//     } catch (error) {
-//         return `Get it now for just ${localPrice}!`;
-//     }
-// };
