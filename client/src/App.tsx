@@ -359,8 +359,10 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
             </p>
           )}
           <div className="flex items-center gap-4 bg-white/80 p-1.5 rounded-full border border-slate-200 shadow-sm">
-             <span className="text-[10px] font-black uppercase text-slate-500 ml-4">{user?.username?.split(' ')[0]}</span>
-             <button onClick={handleLogout} className="bg-slate-900 text-white px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-red-500 transition-all uppercase tracking-widest">Logout</button>
+             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+              Hi, {user?.username ? user.username.split(' ')[0] : 'Member'}
+            </span>
+            <button onClick={handleLogout} className="bg-slate-900 text-white px-4 py-1.5 rounded-full text-[10px] font-bold hover:bg-red-500 transition-all uppercase tracking-widest">Logout</button>
           </div>
         </div>
       </nav>
@@ -404,7 +406,7 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
                   <p className="text-slate-400 uppercase font-black mb-10 text-sm tracking-widest underline decoration-blue-600 decoration-4 underline-offset-8">Fair Price for {result.countryName || country}</p>
                   <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 relative">
                     <p className="text-blue-400 text-[10px] font-black uppercase mb-3 tracking-widest flex items-center gap-2"><Sparkles size={12}/> AI Marketing Pitch</p>
-                    <div className={!user?.isPro ? "blur-2xl select-none opacity-20 pointer-events-none" : ""}><p className="italic text-xl font-serif leading-relaxed">"{result.localizedPitch}"</p></div>
+                    <div className={!user?.isPro ? "blur-2xl select-none opacity-20 pointer-events-none" : ""}><p className="italic text-xl text-slate-100 font-serif leading-relaxed whitespace-pre-line"> "{result.localizedPitch}"</p></div>
                     {!user?.isPro && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 rounded-[2rem] p-6 text-center">
                         <Lock className="text-blue-500 mb-3" size={20}/><button onClick={() => handleUpgrade('monthly')} className="bg-white text-slate-900 px-6 py-2.5 rounded-full text-[10px] font-black uppercase shadow-2xl">Unlock Pro Features</button>
