@@ -71,8 +71,13 @@ app.post('/api/calculate', protect, async (req: any, res: any) => {
         let pitch = "Upgrade to Pro to unlock AI Marketing Pitches ";
         
         // Monetization Check: Evaluates your fresh, validated user instance status
-        if (user.isPro) {
-            pitch = await generateLocalizedPitch(productName, pricing.localPriceFormatted, country);
+        if (user?.isPro) {
+            pitch = await generateLocalizedPitch(
+                productName, 
+                pricing.localPriceFormatted, 
+                pricing.suggestedPrice, // <--- New Argument added here
+                country
+            );
         }
 
         const newStrategy = new Strategy({
