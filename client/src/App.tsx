@@ -433,6 +433,62 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
           </div>
         )}
 
+        {/* --- SUBSCRIBER INTEGRATION SECTION --- */}
+        {token && user?.isPro && (
+          <motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-20 max-w-4xl mx-auto pb-20">
+            <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-2xl shadow-slate-200/50">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
+                  <ShieldCheck size={24} />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-slate-800">Merchant Implementation</h3>
+                  <p className="text-slate-400 text-sm">Follow these 3 steps to go live globally.</p>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-8">
+                {/* Step 1 */}
+                <div className="space-y-3">
+                  <span className="text-blue-600 font-black text-sm">STEP 01</span>
+                  <h5 className="font-bold text-slate-700 leading-tight">Create 3 Codes</h5>
+                  <p className="text-xs text-slate-400 leading-relaxed">Go to your Checkout Dashboard and create these 3 discount codes: <code className="text-blue-600 font-bold">GLOBAL20</code> (20% off), <code className="text-blue-600 font-bold">GLOBAL50</code> (50% off), and <code className="text-blue-600 font-bold">GLOBAL70</code> (70% off).</p>
+                </div>
+
+                {/* Step 2 */}
+                <div className="space-y-3">
+                  <span className="text-blue-600 font-black text-sm">STEP 02</span>
+                  <h5 className="font-bold text-slate-700 leading-tight">Markup Prices</h5>
+                  <p className="text-xs text-slate-400 leading-relaxed">Add the attribute <code className="bg-slate-100 px-1 italic">data-pp-price="VALUE"</code> to any element where you want the fair price to appear.</p>
+                  <div className="bg-slate-900 p-3 rounded-lg font-mono text-[9px] text-blue-300">
+                    {`<span data-pp-price="100"></span>`}
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="space-y-3">
+                  <span className="text-blue-600 font-black text-sm">STEP 03</span>
+                  <h5 className="font-bold text-slate-700 leading-tight">Install Script</h5>
+                  <p className="text-xs text-slate-400 leading-relaxed">Paste this single script tag right before your closing &lt;/body&gt; tag.</p>
+                  <div className="bg-slate-900 p-3 rounded-lg font-mono text-[9px] text-blue-300 break-all overflow-hidden">
+                    {`<script src="${API_BASE}/widget"></script>`}
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(`<script src="${API_BASE}/widget"></script>`);
+                  toast.success("Script copied to clipboard!");
+                }}
+                className="mt-10 w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-all active:scale-95 shadow-xl"
+              >
+                Copy Universal Production Script
+              </button>
+            </div>
+          </motion.section>
+        )}
+
         {/* PERSISTENT HISTORY SECTION */}
         {history.length > 0 && (
           <div className="pt-20 border-t border-slate-100">
