@@ -53,9 +53,10 @@ export const generateLocalizedPitch = async (productName: string, localPrice: st
             3. Ensure the local price "${localPrice}" is included in the pitch.
             
             FORMATTING RULES:
-            - If the primary language of ${country} is English (like Nigeria), just provide one high-converting English version. 
-            - If the primary language is NOT English (like Brazil or India), provide the Native Pitch, a divider line "---", and then an English Translation using the USD value "$${usdPrice}".
-            - Use culturally relevant emojis for ${country}.
+            [Native Pitch]
+             
+            - If the primary language is NOT English (like Brazil or India), provide the Native Pitch, a divider line "---", 
+              and then an English Translation using the USD value "$${usdPrice}".
 
             DO NOT output anything other than the pitch.
         `;
