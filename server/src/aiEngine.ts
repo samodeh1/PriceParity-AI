@@ -54,12 +54,9 @@ export const generateLocalizedPitch = async (productName: string, localPrice: st
             
             FORMATTING RULES:
             [Native Pitch]
-             
-            - If the primary language is NOT English (like Brazil or India), provide the Native Pitch, a divider line "---", 
-              and then an English Translation using the USD value "$${usdPrice}".
-
-            DO NOT output anything other than the pitch.
-        `;
+             ---
+           Translation: [English Version using $ symbols]
+         `;
 
         const response = await openai.chat.completions.create({
             model: "gpt-4o-mini", 
