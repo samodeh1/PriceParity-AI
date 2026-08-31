@@ -177,28 +177,55 @@ app.get('/api/countries', (req, res) => res.json(getCountryList()));
 // --- 5. SUBSCRIBER WIDGET ENGINE ---
 app.get('/api/widget', async (req: any, res: any) => {
     try {
-        const originalPrice = Number(req.query.price) || 12;
         const clientIp = requestIp.getClientIp(req) || "";
         const geo = geoip.lookup(clientIp);
         const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
 
-        const result = calculatePPPPrice(originalPrice, countryCode);
-        const pppMultiplier = result.discountPercentage > 0 ? (result.suggestedPrice / originalPrice) : 1;
-        const currentRate = pppData[countryCode]?.rate || 1;
+        // 1. Run the Tiered Math (Base price 100 for multiplier calculation)
+        const result = calculatePPPPrice(100, countryCode);
+        
+        // 2. Map Tiers to your Subscriber's Discount Codes
+        let discountCode = "";
+        if (result.discountTier === "LOW") discountCode = "GLOBAL20";
+        if (result.discountTier === "MID") discountCode = "GLOBAL50";
+        if (result.discountTier === "HIGH") discountCode = "GLOBAL70";
 
         res.setHeader('Content-Type', 'application/javascript');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+
         res.send(`
             (function() {
-                function inject() {
-                    const target = document.querySelector('[data-pp-price]');
-                    if (target) {
-                        const p = parseFloat(target.getAttribute('data-pp-price')) || ${originalPrice};
-                        const local = Math.round(p * ${pppMultiplier} * ${currentRate});
-                        target.innerHTML = ' Local Offer: Residents of ${result.countryName} pay only <b>${result.symbol}' + local.toLocaleString() + '</b>';
-                        target.style.cssText = "display:inline-flex; align-items:center; background:rgba(37,99,235,0.05); color:#2563eb; padding:8px 16px; border-radius:99px; font-size:13px; font-weight:700; border:1px solid rgba(37,99,235,0.1); animation: pulse 2s infinite;";
-                    } else { setTimeout(inject, 500); }
+                function applyPriceParity() {
+                    // Step A: Update Visual Display Elements
+                    const displays = document.querySelectorAll('[data-pp-price]');
+                    displays.forEach(el => {
+                        const originalPrice = parseFloat(el.getAttribute('data-pp-price'));
+                        if (isNaN(originalPrice)) return;
+
+                        // Calculate the same local price shown on the dashboard
+                        const multiplier = ${result.suggestedPrice / 100};
+                        const localPrice = "${result.symbol} " + Math.round(originalPrice * multiplier * ${pppData[countryCode]?.rate || 1}).toLocaleString();
+
+                        el.innerHTML = '✨ Local Offer: Residents of ${result.countryName} pay only <b>' + localPrice + '</b>';
+                        el.style.cssText = "display:inline-flex; align-items:center; gap:8px; background:rgba(37,99,235,0.05); color:#2563eb; padding:8px 16px; border-radius:99px; font-size:13px; font-weight:700; border:1px solid rgba(37,99,235,0.1); margin: 10px 0; font-family: sans-serif;";
+                    });
+
+                    // Step B: Auto-Apply Discount to Checkout Links
+                    if ("${discountCode}") {
+                        const links = document.querySelectorAll('a[href*="lemonsqueezy.com"], a[href*="gumroad.com"], a[href*="stripe.com"]');
+                        links.forEach(link => {
+                            const url = new URL(link.href);
+                            url.searchParams.set('discount_code', "${discountCode}");
+                            // Lemon Squeezy specific format
+                            url.searchParams.set('checkout[discount_code]', "${discountCode}");
+                            link.href = url.toString();
+                        });
+                    }
                 }
-                inject();
+
+                document.readyState === 'loading' 
+                    ? document.addEventListener('DOMContentLoaded', applyPriceParity) 
+                    : applyPriceParity();
             })();
         `);
     } catch (e) { res.status(500).send(""); }
