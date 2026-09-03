@@ -256,11 +256,7 @@ app.get('/api/widget', async (req: any, res: any) => {
                         // --- THE PRO LAYOUT FIX ---
                         // 1. We use 'flex' with 'width: 100%' to force it to a new line
                         // 2. We use '!important' so it overrides any subscriber's CSS
-                        el.style.cssText = "display: flex !important; width: 100% !important; 
-                        flex-basis: 100% !important; margin-top: 8px !important; color: #2563eb !important; 
-                        font-size: 11px !important; font-family: system-ui, sans-serif !important; 
-                        border-top: 1px dashed rgba(37,99,235,0.2) !important; padding-top: 8px !important; 
-                        line-height: 1.2 !important; white-space: normal !important;";
+                        el.style.cssText = "display: flex !important; width: 100% !important; flex-basis: 100% !important; margin-top: 8px !important; color: #2563eb !important; font-size: 11px !important; font-family: system-ui, sans-serif !important; border-top: 1px dashed rgba(37,99,235,0.2) !important; padding-top: 8px !important; line-height: 1.2 !important; white-space: normal !important;";
                         
                         el.setAttribute('data-pp-done', 'true');
                     });
