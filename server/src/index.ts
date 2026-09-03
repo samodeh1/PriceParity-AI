@@ -93,20 +93,13 @@ app.get('/api/countries', (req, res) => res.json(getCountryList()));
 
 app.get('/api/widget', async (req: any, res: any) => {
     try {
-        // 1. Get price from query (default to your 12 for the landing page)
         const originalPrice = Number(req.query.price) || 12;
         const clientIp = requestIp.getClientIp(req) || "";
         const geo = geoip.lookup(clientIp);
         const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
 
-        // 2. Get the result from our pricing engine
         const result = calculatePPPPrice(originalPrice, countryCode);
-        
-        // 3. THE MATH FIX: Calculate the EXACT multiplier 
-        // (e.g. 4.2 / 12 = 0.35)
         const pppMultiplier = result.suggestedPrice / originalPrice;
-        
-        // 4. Get the specific exchange rate for this country from our pppData
         const currentRate = pppData[countryCode.toUpperCase()]?.rate || 1;
 
         res.setHeader('Content-Type', 'application/javascript');
@@ -117,26 +110,48 @@ app.get('/api/widget', async (req: any, res: any) => {
                 function inject() {
                     const targets = document.querySelectorAll('[data-pp-price]');
                     targets.forEach(el => {
-                        if (el.getAttribute('data-pp-done') === 'true') return;
-
                         const p = parseFloat(el.getAttribute('data-pp-price'));
                         if (isNaN(p)) return;
 
-                        // Calculate: Local Price = Original Price * Regional Discount * Exchange Rate
                         const localValue = Math.round(p * ${pppMultiplier} * ${currentRate});
                         const formatted = "${result.symbol} " + localValue.toLocaleString();
 
-                        el.innerHTML = '✨ Local Offer: Residents of ${result.countryName} pay only <b>' + formatted + '</b>';
-                        
-                        // DESIGN FIX: Ensuring enough width so text doesn't cut off
-                        el.style.cssText = "display:inline-flex; align-items:center; gap:8px; background:rgba(37,99,235,0.05); color:#2563eb; padding:8px 20px; border-radius:99px; font-size:13px; font-weight:700; border:1px solid rgba(37,99,235,0.1); animation: pulse 2s infinite; white-space: nowrap;";
+                        // 1. DYNAMIC TEXT BASED ON WIDTH
+                        // We check the parent's width. If it's small (like a card), we use short text.
+                        const parentWidth = el.parentElement ? el.parentElement.clientWidth : 300;
+                        const message = parentWidth < 200 
+                            ? ' ' + formatted  // Compact: " ₦ 5,725"
+                            : ' Local Offer: Residents of ${result.countryName} pay only <b>' + formatted + '</b>';
+
+                        // 2. BULLETPROOF CSS
+                        // This ensures it never breaks the layout, regardless of subscriber's CSS
+                        el.innerHTML = message;
+                        el.style.cssText = \`
+                            display: inline-flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            width: auto !important;
+                            max-width: 100% !important;
+                            background: rgba(37,99,235,0.05) !important;
+                            color: #2563eb !important;
+                            padding: 4px 10px !important;
+                            border-radius: 8px !important;
+                            font-size: \${parentWidth < 200 ? '10px' : '12px'} !important;
+                            font-weight: 700 !important;
+                            border: 1px solid rgba(37,99,235,0.1) !important;
+                            margin: 4px 0 !important;
+                            font-family: sans-serif !important;
+                            box-sizing: border-box !important;
+                            white-space: nowrap !important;
+                            overflow: hidden !important;
+                            text-overflow: ellipsis !important;
+                        \`;
                         
                         el.setAttribute('data-pp-done', 'true');
                     });
                 }
                 document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
-                // Check for new products every second (for React apps)
-                setInterval(inject, 1000);
+                setInterval(inject, 1500); // Continuous scan for dynamic apps like React
             })();
         `);
     } catch (e) { res.status(500).send(""); }
