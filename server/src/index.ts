@@ -99,7 +99,9 @@ app.get('/api/widget', async (req: any, res: any) => {
         const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
 
         const result = calculatePPPPrice(originalPrice, countryCode);
-        const pppMultiplier = result.suggestedPrice / originalPrice;
+        
+        // Ensure the math is 100% accurate based on the current selection
+        const pppMultiplier = result.multiplier; 
         const currentRate = pppData[countryCode.toUpperCase()]?.rate || 1;
 
         res.setHeader('Content-Type', 'application/javascript');
@@ -110,48 +112,36 @@ app.get('/api/widget', async (req: any, res: any) => {
                 function inject() {
                     const targets = document.querySelectorAll('[data-pp-price]');
                     targets.forEach(el => {
+                        if (el.getAttribute('data-pp-done') === 'true') return;
+
                         const p = parseFloat(el.getAttribute('data-pp-price'));
                         if (isNaN(p)) return;
 
                         const localValue = Math.round(p * ${pppMultiplier} * ${currentRate});
                         const formatted = "${result.symbol} " + localValue.toLocaleString();
 
-                        // 1. DYNAMIC TEXT BASED ON WIDTH
-                        // We check the parent's width. If it's small (like a card), we use short text.
-                        const parentWidth = el.parentElement ? el.parentElement.clientWidth : 300;
-                        const message = parentWidth < 200 
-                            ? ' ' + formatted  // Compact: " ₦ 5,725"
+                        // --- SENIOR FIX: DYNAMIC MESSAGE LENGTH ---
+                        // If the container is smaller than 300px, use the short version
+                        const parentWidth = el.offsetWidth || el.parentElement.offsetWidth || 300;
+                        const isSmall = parentWidth < 300;
+
+                        const message = isSmall 
+                            ? 'Pay <b>' + formatted + '</b> in ${result.countryName}' 
                             : ' Local Offer: Residents of ${result.countryName} pay only <b>' + formatted + '</b>';
 
-                        // 2. BULLETPROOF CSS
-                        // This ensures it never breaks the layout, regardless of subscriber's CSS
                         el.innerHTML = message;
-                        el.style.cssText = \`
-                            display: inline-flex !important;
-                            align-items: center !important;
-                            justify-content: center !important;
-                            width: auto !important;
-                            max-width: 100% !important;
-                            background: rgba(37,99,235,0.05) !important;
-                            color: #2563eb !important;
-                            padding: 4px 10px !important;
-                            border-radius: 8px !important;
-                            font-size: \${parentWidth < 200 ? '10px' : '12px'} !important;
-                            font-weight: 700 !important;
-                            border: 1px solid rgba(37,99,235,0.1) !important;
-                            margin: 4px 0 !important;
-                            font-family: sans-serif !important;
-                            box-sizing: border-box !important;
-                            white-space: nowrap !important;
-                            overflow: hidden !important;
-                            text-overflow: ellipsis !important;
-                        \`;
+                        
+                        // --- UI REFINEMENT ---
+                        el.style.cssText = "display: inline-flex; align-items: center; gap: 6px; background: rgba(37,99,235,0.06);
+                                            color: #2563eb; padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; 
+                                            border: 1px solid rgba(37,99,235,0.1); margin-top: 4px; font-family: system-ui, sans-serif; 
+                                            white-space: normal; line-height: 1.2; text-align: left;";
                         
                         el.setAttribute('data-pp-done', 'true');
                     });
                 }
                 document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
-                setInterval(inject, 1500); // Continuous scan for dynamic apps like React
+                setInterval(inject, 1500); 
             })();
         `);
     } catch (e) { res.status(500).send(""); }
