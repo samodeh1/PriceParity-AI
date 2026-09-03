@@ -91,65 +91,52 @@ app.get('/api/strategies', protect, async (req: any, res: Response) => {
 
 app.get('/api/countries', (req, res) => res.json(getCountryList()));
 
-app.get('/api/widget', async (req: any, res: Response) => {
+app.get('/api/widget', async (req: any, res: any) => {
     try {
+        // 1. Get price from query (default to your 12 for the landing page)
         const originalPrice = Number(req.query.price) || 12;
         const clientIp = requestIp.getClientIp(req) || "";
         const geo = geoip.lookup(clientIp);
         const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
 
+        // 2. Get the result from our pricing engine
         const result = calculatePPPPrice(originalPrice, countryCode);
         
-        let discountCode = "";
-        if (result.discountTier === "LOW") discountCode = "GLOBAL20";
-        if (result.discountTier === "MID") discountCode = "GLOBAL50";
-        if (result.discountTier === "HIGH") discountCode = "GLOBAL70";
-        
+        // 3. THE MATH FIX: Calculate the EXACT multiplier 
+        // (e.g. 4.2 / 12 = 0.35)
         const pppMultiplier = result.suggestedPrice / originalPrice;
+        
+        // 4. Get the specific exchange rate for this country from our pppData
+        const currentRate = pppData[countryCode.toUpperCase()]?.rate || 1;
+
         res.setHeader('Content-Type', 'application/javascript');
-        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Origin', '*'); 
 
         res.send(`
             (function() {
-                function applyPriceParity() {
-                    // Find all elements with the price attribute
+                function inject() {
                     const targets = document.querySelectorAll('[data-pp-price]');
-                    
                     targets.forEach(el => {
-                        // Avoid double-processing the same element
                         if (el.getAttribute('data-pp-done') === 'true') return;
 
                         const p = parseFloat(el.getAttribute('data-pp-price'));
                         if (isNaN(p)) return;
 
-                        // Calculation Logic
+                        // Calculate: Local Price = Original Price * Regional Discount * Exchange Rate
                         const localValue = Math.round(p * ${pppMultiplier} * ${currentRate});
                         const formatted = "${result.symbol} " + localValue.toLocaleString();
 
-                        // Update the UI
-                        el.innerHTML = '<span style="display:inline-flex; align-items:center; gap:4px; background:rgba(37,99,235,0.08); 
-                        color:#2563eb; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:700; border:1px solid rgba(37,99,235,0.1); 
-                        animation: pulse 2s infinite;"> 'Local Offer: Residents of ${result.countryName} pay only <b>' + formatted + '</b>'; '</span>';
+                        el.innerHTML = '✨ Local Offer: Residents of ${result.countryName} pay only <b>' + formatted + '</b>';
+                        
+                        // DESIGN FIX: Ensuring enough width so text doesn't cut off
+                        el.style.cssText = "display:inline-flex; align-items:center; gap:8px; background:rgba(37,99,235,0.05); color:#2563eb; padding:8px 20px; border-radius:99px; font-size:13px; font-weight:700; border:1px solid rgba(37,99,235,0.1); animation: pulse 2s infinite; white-space: nowrap;";
                         
                         el.setAttribute('data-pp-done', 'true');
                     });
-
-                    // Update any Checkout Links
-                    if ("${discountCode}") {
-                        document.querySelectorAll('a[href*="lemonsqueezy.com"], a[href*="gumroad.com"], a[href*="stripe.com"]').forEach(link => {
-                            try {
-                                const url = new URL(link.href);
-                                url.searchParams.set('checkout[discount_code]', "${discountCode}");
-                                link.href = url.toString();
-                            } catch(e) {}
-                        });
-                    }
                 }
-
-                // THE SENIOR FIX: Run the scanner every 1 second
-                // This ensures we catch products that load late via React/APIs
-                setInterval(applyPriceParity, 1000);
-                applyPriceParity();
+                document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
+                // Check for new products every second (for React apps)
+                setInterval(inject, 1000);
             })();
         `);
     } catch (e) { res.status(500).send(""); }
