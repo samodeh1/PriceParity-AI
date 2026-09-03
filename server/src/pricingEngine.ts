@@ -42,7 +42,7 @@ export const pppData: Record<string, CountryData> = {
     "ET": { tier: "HIGH" }, "TZ": { tier: "HIGH" }, "UG": { tier: "HIGH" },
     "RW": { tier: "HIGH" }, "ZM": { tier: "HIGH" }, "NP": { tier: "HIGH" },
     "LK": { tier: "HIGH" }, "MM": { tier: "HIGH" }, "KH": { tier: "HIGH" },
-    "DEFAULT": { name: "International", multiplier: 0.6, symbol: "$", rate: 1 }
+    "DEFAULT": { tier: "LOW", multiplier: 0.4, symbol: "$", rate: 1 }
 };
 
 // HELPER: To provide a clean list of all 195 countries to the dropdown
