@@ -91,6 +91,82 @@ app.get('/api/strategies', protect, async (req: any, res: Response) => {
 
 app.get('/api/countries', (req, res) => res.json(getCountryList()));
 
+// app.get('/api/widget', async (req: any, res: any) => {
+//     try {
+//         const originalPrice = Number(req.query.price) || 12;
+//         const clientIp = requestIp.getClientIp(req) || "";
+//         const geo = geoip.lookup(clientIp);
+//         const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
+
+//         // 1. Calculate values in Node first
+//         const result = calculatePPPPrice(originalPrice, countryCode);
+//         const pppMultiplier = result.multiplier || 0.4;
+//         const countryConfig = pppData[countryCode.toUpperCase()];
+//         const currentRate = countryConfig ? countryConfig.rate : 1;
+//         const symbol = result.symbol || "$";
+//         const countryName = result.countryName || "International";
+
+//         res.setHeader('Content-Type', 'application/javascript');
+//         res.setHeader('Access-Control-Allow-Origin', '*');
+
+//         // 2. Inject numbers as raw text to avoid JS token errors
+//         res.send(`
+//             (function() {
+//                 const MULTIPLIER = ${pppMultiplier};
+//                 const RATE = ${currentRate};
+//                 const SYMBOL = "${symbol}";
+//                 const COUNTRY = "${countryName}";
+
+//                 function applyLogic() {
+//                     const elements = document.querySelectorAll('[data-pp-price]');
+//                     elements.forEach(el => {
+//                         if (el.getAttribute('data-pp-done') === 'true') return;
+
+//                         const basePrice = parseFloat(el.getAttribute('data-pp-price'));
+//                         if (isNaN(basePrice)) return;
+
+//                         // Calculation
+//                         const fairLocal = Math.round(basePrice * MULTIPLIER * RATE);
+//                         const formatted = SYMBOL + " " + fairLocal.toLocaleString();
+
+//                         // Use simple string concatenation to avoid backtick crashes
+//                         const isSmall = (el.offsetWidth || el.parentElement.offsetWidth || 300) < 250;
+//                         el.innerHTML = isSmall ? ' ' + formatted : ' Residents of ' + COUNTRY + ' pay only <b>' + formatted + '</b>';
+
+//                         // 3. SAFE STYLING (No backticks used here)
+//                         el.style.display = 'inline-flex';
+//                         el.style.alignItems = 'center';
+//                         el.style.background = 'rgba(37, 99, 235, 0.05)';
+//                         el.style.color = '#2563eb';
+//                         el.style.padding = '6px 12px';
+//                         el.style.borderRadius = '10px';
+//                         el.style.fontSize = '12px';
+//                         el.style.fontWeight = '700';
+//                         el.style.border = '1px solid rgba(37, 99, 235, 0.1)';
+//                         el.style.marginTop = '4px';
+//                         el.style.fontFamily = 'system-ui, sans-serif';
+//                         el.style.whiteSpace = 'nowrap';
+                        
+//                         el.setAttribute('data-pp-done', 'true');
+//                     });
+//                 }
+
+//                 if (document.readyState === 'loading') {
+//                     document.addEventListener('DOMContentLoaded', applyLogic);
+//                 } else {
+//                     applyLogic();
+//                 }
+//                 setInterval(applyLogic, 1500);
+//             })();
+//         `);
+//     } catch (error) {
+//         console.error("Critical Widget Failure:", error);
+//         res.status(500).send("");
+//     }
+// });
+
+// server/src/index.ts -> /api/widget
+
 app.get('/api/widget', async (req: any, res: any) => {
     try {
         const originalPrice = Number(req.query.price) || 12;
@@ -98,70 +174,46 @@ app.get('/api/widget', async (req: any, res: any) => {
         const geo = geoip.lookup(clientIp);
         const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
 
-        // 1. Calculate values in Node first
+        // 1. Run the math on the server
         const result = calculatePPPPrice(originalPrice, countryCode);
-        const pppMultiplier = result.multiplier || 0.4;
-        const countryConfig = pppData[countryCode.toUpperCase()];
-        const currentRate = countryConfig ? countryConfig.rate : 1;
-        const symbol = result.symbol || "$";
-        const countryName = result.countryName || "International";
 
         res.setHeader('Content-Type', 'application/javascript');
-        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Origin', '*'); 
 
-        // 2. Inject numbers as raw text to avoid JS token errors
+        // 2. We send the ALREADY FORMATTED localPriceFormatted
+        // This stops NaN because the browser does 0 math.
         res.send(`
             (function() {
-                const MULTIPLIER = ${pppMultiplier};
-                const RATE = ${currentRate};
-                const SYMBOL = "${symbol}";
-                const COUNTRY = "${countryName}";
-
-                function applyLogic() {
-                    const elements = document.querySelectorAll('[data-pp-price]');
-                    elements.forEach(el => {
+                function inject() {
+                    const targets = document.querySelectorAll('[data-pp-price]');
+                    targets.forEach(el => {
                         if (el.getAttribute('data-pp-done') === 'true') return;
+                        
+                        const p = parseFloat(el.getAttribute('data-pp-price'));
+                        
+                        // If it is our own landing page (price is 12), use the server result
+                        // Otherwise, we do a simple safe calculation for their custom price
+                        let finalDisplayPrice = "${result.localPriceFormatted}";
+                        
+                        if (p !== ${originalPrice}) {
+                           const multiplier = ${result.suggestedPrice / originalPrice};
+                           const localVal = Math.round(p * multiplier * ${pppData[countryCode.toUpperCase()]?.rate || 1});
+                           finalDisplayPrice = "${result.symbol} " + localVal.toLocaleString();
+                        }
 
-                        const basePrice = parseFloat(el.getAttribute('data-pp-price'));
-                        if (isNaN(basePrice)) return;
-
-                        // Calculation
-                        const fairLocal = Math.round(basePrice * MULTIPLIER * RATE);
-                        const formatted = SYMBOL + " " + fairLocal.toLocaleString();
-
-                        // Use simple string concatenation to avoid backtick crashes
-                        const isSmall = (el.offsetWidth || el.parentElement.offsetWidth || 300) < 250;
-                        el.innerHTML = isSmall ? ' ' + formatted : ' Residents of ' + COUNTRY + ' pay only <b>' + formatted + '</b>';
-
-                        // 3. SAFE STYLING (No backticks used here)
-                        el.style.display = 'inline-flex';
-                        el.style.alignItems = 'center';
-                        el.style.background = 'rgba(37, 99, 235, 0.05)';
-                        el.style.color = '#2563eb';
-                        el.style.padding = '6px 12px';
-                        el.style.borderRadius = '10px';
-                        el.style.fontSize = '12px';
-                        el.style.fontWeight = '700';
-                        el.style.border = '1px solid rgba(37, 99, 235, 0.1)';
-                        el.style.marginTop = '4px';
-                        el.style.fontFamily = 'system-ui, sans-serif';
-                        el.style.whiteSpace = 'nowrap';
+                        el.innerHTML = ' Local Offer: Residents of ${result.countryName} pay only <b>' + finalDisplayPrice + '</b>';
+                        
+                        el.style.cssText = "display: inline-flex; align-items: center; gap: 8px; background: rgba(37, 99, 235, 0.05); color: #2563eb; padding: 8px 16px; border-radius: 99px; font-size: 13px; font-weight: 700; border: 1px solid rgba(37, 99, 235, 0.1); animation: pulse 2s infinite; font-family: sans-serif; white-space: nowrap;";
                         
                         el.setAttribute('data-pp-done', 'true');
                     });
                 }
-
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', applyLogic);
-                } else {
-                    applyLogic();
-                }
-                setInterval(applyLogic, 1500);
+                document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
+                setInterval(inject, 1500); 
             })();
         `);
-    } catch (error) {
-        console.error("Critical Widget Failure:", error);
-        res.status(500).send("");
+    } catch (e) { 
+        res.status(500).send("console.error('PriceParity Error')"); 
     }
 });
 
