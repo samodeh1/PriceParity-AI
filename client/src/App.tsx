@@ -271,12 +271,13 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
           
           {/* FLEX CONTAINER: Moves both badges to one line */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
+          <div className="mb-6 flex justify-center items-center min-h-[44px] w-full overflow-visible">
             
             {/* 1. LOCAL OFFER BADGE (Self-filling Widget) */}
-            <div data-pp-price="12" className="flex items-center">
+            
               {/* The widget script will inject the offer text here */}
-            </div>
+            
+            <div data-pp-price="12"></div>
 
             {/* 2. THE FUTURE BADGE */}
             <div className="inline-flex items-center gap-2 bg-blue-50/50 text-blue-600 px-4 py-2 rounded-full text-[10px] font-black tracking-widest uppercase border border-blue-100">
