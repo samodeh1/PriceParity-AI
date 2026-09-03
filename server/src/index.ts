@@ -167,6 +167,58 @@ app.get('/api/countries', (req, res) => res.json(getCountryList()));
 
 // server/src/index.ts -> /api/widget
 
+// app.get('/api/widget', async (req: any, res: any) => {
+//     try {
+//         const originalPrice = Number(req.query.price) || 12;
+//         const clientIp = requestIp.getClientIp(req) || "";
+//         const geo = geoip.lookup(clientIp);
+//         const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
+
+//         // 1. Run the math on the server
+//         const result = calculatePPPPrice(originalPrice, countryCode);
+
+//         res.setHeader('Content-Type', 'application/javascript');
+//         res.setHeader('Access-Control-Allow-Origin', '*'); 
+
+//         // 2. We send the ALREADY FORMATTED localPriceFormatted
+//         // This stops NaN because the browser does 0 math.
+//         res.send(`
+//             (function() {
+//                 function inject() {
+//                     const targets = document.querySelectorAll('[data-pp-price]');
+//                     targets.forEach(el => {
+//                         if (el.getAttribute('data-pp-done') === 'true') return;
+                        
+//                         const p = parseFloat(el.getAttribute('data-pp-price'));
+                        
+//                         // If it is our own landing page (price is 12), use the server result
+//                         // Otherwise, we do a simple safe calculation for their custom price
+//                         let finalDisplayPrice = "${result.localPriceFormatted}";
+                        
+//                         if (p !== ${originalPrice}) {
+//                            const multiplier = ${result.suggestedPrice / originalPrice};
+//                            const localVal = Math.round(p * multiplier * ${pppData[countryCode.toUpperCase()]?.rate || 1});
+//                            finalDisplayPrice = "${result.symbol} " + localVal.toLocaleString();
+//                         }
+
+//                         el.innerHTML = ' Local Offer: ' + "${result.countryName}" + ' <b>' + finalDisplayPrice + '</b>';
+                        
+//                         el.style.cssText = "display: inline-flex; align-items: center; gap: 8px; background: rgba(37, 99, 235, 0.05); color: #2563eb; padding: 8px 16px; border-radius: 99px; font-size: 13px; font-weight: 700; border: 1px solid rgba(37, 99, 235, 0.1); animation: pulse 2s infinite; font-family: sans-serif; white-space: nowrap;";
+                        
+//                         el.setAttribute('data-pp-done', 'true');
+//                     });
+//                 }
+//                 document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
+//                 setInterval(inject, 1500); 
+//             })();
+//         `);
+//     } catch (e) { 
+//         res.status(500).send("console.error('PriceParity Error')"); 
+//     }
+// });
+
+// server/src/index.ts -> /api/widget
+
 app.get('/api/widget', async (req: any, res: any) => {
     try {
         const originalPrice = Number(req.query.price) || 12;
@@ -174,36 +226,37 @@ app.get('/api/widget', async (req: any, res: any) => {
         const geo = geoip.lookup(clientIp);
         const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
 
-        // 1. Run the math on the server
         const result = calculatePPPPrice(originalPrice, countryCode);
+        const pppMultiplier = result.suggestedPrice / originalPrice;
+        const currentRate = pppData[countryCode.toUpperCase()]?.rate || 1;
 
         res.setHeader('Content-Type', 'application/javascript');
         res.setHeader('Access-Control-Allow-Origin', '*'); 
 
-        // 2. We send the ALREADY FORMATTED localPriceFormatted
-        // This stops NaN because the browser does 0 math.
         res.send(`
             (function() {
                 function inject() {
                     const targets = document.querySelectorAll('[data-pp-price]');
                     targets.forEach(el => {
                         if (el.getAttribute('data-pp-done') === 'true') return;
-                        
-                        const p = parseFloat(el.getAttribute('data-pp-price'));
-                        
-                        // If it is our own landing page (price is 12), use the server result
-                        // Otherwise, we do a simple safe calculation for their custom price
-                        let finalDisplayPrice = "${result.localPriceFormatted}";
-                        
-                        if (p !== ${originalPrice}) {
-                           const multiplier = ${result.suggestedPrice / originalPrice};
-                           const localVal = Math.round(p * multiplier * ${pppData[countryCode.toUpperCase()]?.rate || 1});
-                           finalDisplayPrice = "${result.symbol} " + localVal.toLocaleString();
-                        }
 
-                        el.innerHTML = ' Local Offer: ' + "${result.countryName}" + ' <b>' + finalDisplayPrice + '</b>';
+                        const p = parseFloat(el.getAttribute('data-pp-price'));
+                        if (isNaN(p)) return;
+
+                        const localValue = Math.round(p * ${pppMultiplier} * ${currentRate});
+                        const formatted = "${result.symbol} " + localValue.toLocaleString();
+
+                        const isSmall = (el.offsetWidth || el.parentElement.offsetWidth || 300) < 250;
+                        const message = isSmall 
+                            ? '✨ Pay <b>' + formatted + '</b>' 
+                            : '✨ Residents of ${result.countryName} pay only <b>' + formatted + '</b>';
+
+                        el.innerHTML = message;
                         
-                        el.style.cssText = "display: inline-flex; align-items: center; gap: 8px; background: rgba(37, 99, 235, 0.05); color: #2563eb; padding: 8px 16px; border-radius: 99px; font-size: 13px; font-weight: 700; border: 1px solid rgba(37, 99, 235, 0.1); animation: pulse 2s infinite; font-family: sans-serif; white-space: nowrap;";
+                        // --- THE PRO LAYOUT FIX ---
+                        // 1. We use 'flex' with 'width: 100%' to force it to a new line
+                        // 2. We use '!important' so it overrides any subscriber's CSS
+                        el.style.cssText = "display: flex !important; width: 100% !important; flex-basis: 100% !important; margin-top: 8px !important; color: #2563eb !important; font-size: 11px !important; font-family: system-ui, sans-serif !important; border-top: 1px dashed rgba(37,99,235,0.2) !important; padding-top: 8px !important; line-height: 1.2 !important; white-space: normal !important;";
                         
                         el.setAttribute('data-pp-done', 'true');
                     });
@@ -213,7 +266,7 @@ app.get('/api/widget', async (req: any, res: any) => {
             })();
         `);
     } catch (e) { 
-        res.status(500).send("console.error('PriceParity Error')"); 
+        res.status(500).send(""); 
     }
 });
 
