@@ -6,7 +6,7 @@ interface CountryData {
     symbol?: string;
 }
 
-export const pppData: Record<string, CountryData> = {
+export const pppTiers: Record<string, CountryData> = {
     // --- TIER: NONE (Full Price - GLOBAL20) ---
     "US": { tier: "NONE" }, "CH": { tier: "NONE" }, "SG": { tier: "NONE" },
     "LU": { tier: "NONE" }, "NO": { tier: "NONE" }, "IE": { tier: "NONE" },
@@ -75,7 +75,7 @@ export const getCountryList = () => {
 
 export const calculatePPPPrice = (originalPrice: number, countryCode: string) => {
     const code = countryCode.toUpperCase();
-    const config = pppData[code] || { tier: "MID" }; // Default to 50% off for unlisted
+    const config = pppTiers[code] || { tier: "MID" }; // Default to 50% off for unlisted
 
     const tierMultipliers = {
         "NONE": 1.0,
