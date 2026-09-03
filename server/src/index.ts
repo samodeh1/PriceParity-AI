@@ -22,7 +22,7 @@ const app = express();
 app.use(cors({
     origin: ["https://priceparityai.com",
              "https://www.priceparityai.com",
-             "https://price-parity-ai-2fbe.vercel.app", 
+             "https://priceparityai.vercel.app", 
              "http://localhost:5173"],
     credentials: true
 }));
