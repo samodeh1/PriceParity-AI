@@ -341,7 +341,7 @@ app.get('/api/widget', async (req: any, res: any) => {
     let countryCode = (req.query.test_country as string)?.toUpperCase() || (geo ? geo.country : "US");
     
     const result = calculatePPPPrice(originalPrice, countryCode) || {};
-    const pppMultiplier = result.multiplier || 1.0; // Fallback to 1 if missing
+    const pppMultiplier = result.multiplier || 0.4; // Fallback to 0.4 if missing
     const countryConfig = pppData[countryCode];
     const currentRate = countryConfig && typeof countryConfig.rate === 'number' ? countryConfig.rate : 1;
     
