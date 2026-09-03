@@ -21,19 +21,21 @@ dotenv.config();
 const app = express();
 
 // --- 1. MIDDLEWARE ---
-const allowedOrigins = [
+// Keep it only for your main dashboard routes.
+const privateOrigins = [
   "https://priceparityai.com",
   "https://www.priceparityai.com",
   "https://price-parity-ai-2fbe.vercel.app", 
   "http://localhost:5173"
 ];
 
+// 2. Global CORS for your private Dashboard
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || privateOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('CORS blocked this domain'));
+      callback(null, false);
     }
   },
   credentials: true
@@ -175,6 +177,12 @@ app.get('/api/strategies', protect, async (req: any, res: any) => {
 app.get('/api/countries', (req, res) => res.json(getCountryList()));
 
 // --- 5. SUBSCRIBER WIDGET ENGINE ---
+app.use('/api/widget', (req, res, next) => {
+    // This tells every browser in the world: "You are allowed to run this script"
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    next();
+});
 app.get('/api/widget', async (req: any, res: any) => {
     try {
         const clientIp = requestIp.getClientIp(req) || "";
