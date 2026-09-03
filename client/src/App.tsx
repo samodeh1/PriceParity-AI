@@ -271,7 +271,7 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
           
           {/* FLEX CONTAINER: Moves both badges to one line */}
-          <div className="mb-6 flex justify-center items-center min-h-[44px] w-full overflow-visible">
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
             
             {/* 1. LOCAL OFFER BADGE (Self-filling Widget) */}
             <div data-pp-price="12" className="flex items-center">
