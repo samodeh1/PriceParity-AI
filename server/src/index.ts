@@ -98,11 +98,16 @@ app.get('/api/widget', async (req: any, res: any) => {
         const geo = geoip.lookup(clientIp);
         const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
 
+        // 1. Get calculations
         const result = calculatePPPPrice(originalPrice, countryCode);
         
-        // Ensure the math is 100% accurate based on the current selection
-        const pppMultiplier = result.multiplier; 
-        const currentRate = pppData[countryCode.toUpperCase()]?.rate || 1;
+        // 2. Safely get the multiplier and rate
+        // We use || 1 and || 0.4 as safety nets so math never results in 'NaN'
+        const pppMultiplier = result.multiplier || 0.4; 
+        const countryConfig = pppData[countryCode.toUpperCase()];
+        const currentRate = countryConfig ? countryConfig.rate : 1;
+        const symbol = result.symbol || "$";
+        const countryName = result.countryName || "International";
 
         res.setHeader('Content-Type', 'application/javascript');
         res.setHeader('Access-Control-Allow-Origin', '*'); 
@@ -111,40 +116,46 @@ app.get('/api/widget', async (req: any, res: any) => {
             (function() {
                 function inject() {
                     const targets = document.querySelectorAll('[data-pp-price]');
+                    if (targets.length === 0) return;
+
                     targets.forEach(el => {
                         if (el.getAttribute('data-pp-done') === 'true') return;
 
                         const p = parseFloat(el.getAttribute('data-pp-price'));
                         if (isNaN(p)) return;
 
+                        // Calculation
                         const localValue = Math.round(p * ${pppMultiplier} * ${currentRate});
-                        const formatted = "${result.symbol} " + localValue.toLocaleString();
+                        const formatted = "${symbol} " + localValue.toLocaleString();
 
-                        // --- SENIOR FIX: DYNAMIC MESSAGE LENGTH ---
-                        // If the container is smaller than 300px, use the short version
-                        const parentWidth = el.offsetWidth || el.parentElement.offsetWidth || 300;
-                        const isSmall = parentWidth < 300;
-
-                        const message = isSmall 
-                            ? 'Pay <b>' + formatted + '</b> in ${result.countryName}' 
-                            : ' Local Offer: Residents of ${result.countryName} pay only <b>' + formatted + '</b>';
+                        // Logic: Check parent width for responsive text
+                        const isSmall = (el.offsetWidth || el.parentElement.offsetWidth || 300) < 250;
+                        const message = isSmall ? ' ' + formatted : ' Residents of ${countryName} pay only <b>' + formatted + '</b>';
 
                         el.innerHTML = message;
                         
-                        // --- UI REFINEMENT ---
-                        el.style.cssText = "display: inline-flex; align-items: center; gap: 6px; background: rgba(37,99,235,0.06);
-                                            color: #2563eb; padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; 
-                                            border: 1px solid rgba(37,99,235,0.1); margin-top: 4px; font-family: system-ui, sans-serif; 
-                                            white-space: normal; line-height: 1.2; text-align: left;";
+                        // Professional CSS
+                        el.style.cssText = "display: inline-flex; align-items: center; background: rgba(37,99,235,0.06); color: #2563eb; 
+                        padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; border: 1px solid rgba(37,99,235,0.1); 
+                        margin-top: 6px; font-family: system-ui, -apple-system, sans-serif; white-space: nowrap;";
                         
                         el.setAttribute('data-pp-done', 'true');
                     });
                 }
-                document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
-                setInterval(inject, 1500); 
+                
+                // Run immediately and every 1.5 seconds for React apps
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', inject);
+                } else {
+                    inject();
+                }
+                setInterval(inject, 1500);
             })();
         `);
-    } catch (e) { res.status(500).send(""); }
+    } catch (error) { 
+        console.error("Widget Critical Error:", error);
+        res.status(500).send(""); 
+    }
 });
 
 mongoose.connect(process.env.MONGO_URI as string)
