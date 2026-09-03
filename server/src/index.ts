@@ -98,63 +98,70 @@ app.get('/api/widget', async (req: any, res: any) => {
         const geo = geoip.lookup(clientIp);
         const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
 
-        // 1. Get calculations
+        // 1. Calculate values in Node first
         const result = calculatePPPPrice(originalPrice, countryCode);
-        
-        // 2. Safely get the multiplier and rate
-        // We use || 1 and || 0.4 as safety nets so math never results in 'NaN'
-        const pppMultiplier = result.multiplier || 0.4; 
+        const pppMultiplier = result.multiplier || 0.4;
         const countryConfig = pppData[countryCode.toUpperCase()];
         const currentRate = countryConfig ? countryConfig.rate : 1;
         const symbol = result.symbol || "$";
         const countryName = result.countryName || "International";
 
         res.setHeader('Content-Type', 'application/javascript');
-        res.setHeader('Access-Control-Allow-Origin', '*'); 
+        res.setHeader('Access-Control-Allow-Origin', '*');
 
+        // 2. Inject numbers as raw text to avoid JS token errors
         res.send(`
             (function() {
-                function inject() {
-                    const targets = document.querySelectorAll('[data-pp-price]');
-                    if (targets.length === 0) return;
+                const MULTIPLIER = ${pppMultiplier};
+                const RATE = ${currentRate};
+                const SYMBOL = "${symbol}";
+                const COUNTRY = "${countryName}";
 
-                    targets.forEach(el => {
+                function applyLogic() {
+                    const elements = document.querySelectorAll('[data-pp-price]');
+                    elements.forEach(el => {
                         if (el.getAttribute('data-pp-done') === 'true') return;
 
-                        const p = parseFloat(el.getAttribute('data-pp-price'));
-                        if (isNaN(p)) return;
+                        const basePrice = parseFloat(el.getAttribute('data-pp-price'));
+                        if (isNaN(basePrice)) return;
 
                         // Calculation
-                        const localValue = Math.round(p * ${pppMultiplier} * ${currentRate});
-                        const formatted = "${symbol} " + localValue.toLocaleString();
+                        const fairLocal = Math.round(basePrice * MULTIPLIER * RATE);
+                        const formatted = SYMBOL + " " + fairLocal.toLocaleString();
 
-                        // Logic: Check parent width for responsive text
+                        // Use simple string concatenation to avoid backtick crashes
                         const isSmall = (el.offsetWidth || el.parentElement.offsetWidth || 300) < 250;
-                        const message = isSmall ? ' ' + formatted : ' Residents of ${countryName} pay only <b>' + formatted + '</b>';
+                        el.innerHTML = isSmall ? '✨ ' + formatted : '✨ Residents of ' + COUNTRY + ' pay only <b>' + formatted + '</b>';
 
-                        el.innerHTML = message;
-                        
-                        // Professional CSS
-                        el.style.cssText = "display: inline-flex; align-items: center; background: rgba(37,99,235,0.06); color: #2563eb; 
-                        padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; border: 1px solid rgba(37,99,235,0.1); 
-                        margin-top: 6px; font-family: system-ui, -apple-system, sans-serif; white-space: nowrap;";
+                        // 3. SAFE STYLING (No backticks used here)
+                        el.style.display = 'inline-flex';
+                        el.style.alignItems = 'center';
+                        el.style.background = 'rgba(37, 99, 235, 0.05)';
+                        el.style.color = '#2563eb';
+                        el.style.padding = '6px 12px';
+                        el.style.borderRadius = '10px';
+                        el.style.fontSize = '12px';
+                        el.style.fontWeight = '700';
+                        el.style.border = '1px solid rgba(37, 99, 235, 0.1)';
+                        el.style.marginTop = '4px';
+                        el.style.fontFamily = 'system-ui, sans-serif';
+                        el.style.whiteSpace = 'nowrap';
                         
                         el.setAttribute('data-pp-done', 'true');
                     });
                 }
-                
-                // Run immediately and every 1.5 seconds for React apps
+
                 if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', inject);
+                    document.addEventListener('DOMContentLoaded', applyLogic);
                 } else {
-                    inject();
+                    applyLogic();
                 }
-                setInterval(inject, 1500);
+                setInterval(applyLogic, 1500);
             })();
         `);
-    } catch (error) { 
-        console.error("Widget Critical Error:", error);
-        res.status(500).send(""); 
+    } catch (error) {
+        console.error("Critical Widget Failure:", error);
+        res.status(500).send("");
     }
 });
 
