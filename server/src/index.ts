@@ -20,7 +20,10 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-    origin: ["https://price-parity-ai-2fbe.vercel.app", "https://priceparityai.com", "http://localhost:5173"],
+    origin: ["https://priceparityai.com",
+             "https://www.priceparityai.com",
+             "https://price-parity-ai-2fbe.vercel.app", 
+             "http://localhost:5173"],
     credentials: true
 }));
 
