@@ -7,7 +7,7 @@ import geoip from 'geoip-lite';
 import mongoose from 'mongoose';
 
 // 1. Imports from local files
-import { calculatePPPPrice, getCountryList, pppTiers } from './pricingEngine.js';
+import { calculatePPPPrice, getCountryList, pppData } from './pricingEngine.js';
 import { generateLocalizedPitch } from './aiEngine.js';
 import authRoutes from './routes/auth.js';
 import { protect } from './middleware/authMiddleware.js';
@@ -23,7 +23,8 @@ app.use(cors({
     origin: ["https://priceparityai.com",
              "https://www.priceparityai.com",
              "https://priceparityai.vercel.app", 
-             "http://localhost:5173"],
+             "http://localhost:5173"
+            ],
     credentials: true
 }));
 
@@ -105,8 +106,8 @@ app.get('/api/widget', async (req: any, res: any) => {
         // (e.g. 4.2 / 12 = 0.35)
         const pppMultiplier = result.suggestedPrice / originalPrice;
         
-        // 4. Get the specific exchange rate for this country from our pppTiers
-        const currentRate = pppTiers[countryCode.toUpperCase()]?.rate || 1;
+        // 4. Get the specific exchange rate for this country from our pppData
+        const currentRate = pppData[countryCode.toUpperCase()]?.rate || 1;
 
         res.setHeader('Content-Type', 'application/javascript');
         res.setHeader('Access-Control-Allow-Origin', '*'); 
@@ -127,10 +128,8 @@ app.get('/api/widget', async (req: any, res: any) => {
 
                         el.innerHTML = ' Local Offer: Residents of ${result.countryName} pay only <b>' + formatted + '</b>';
                         
-                        //  DESIGN FIX: Ensuring enough width so text doesn't cut off
-                        el.style.cssText = "display:inline-flex; align-items:center; gap:8px; background:rgba(37,99,235,0.05); 
-                        color:#2563eb; padding:8px 20px; border-radius:99px; font-size:13px; font-weight:700; border:1px solid rgba(37,99,235,0.1); 
-                        animation: pulse 2s infinite; white-space: nowrap;";
+                        // DESIGN FIX: Ensuring enough width so text doesn't cut off
+                        el.style.cssText = "display:inline-flex; align-items:center; gap:8px; background:rgba(37,99,235,0.05); color:#2563eb; padding:8px 20px; border-radius:99px; font-size:13px; font-weight:700; border:1px solid rgba(37,99,235,0.1); animation: pulse 2s infinite; white-space: nowrap;";
                         
                         el.setAttribute('data-pp-done', 'true');
                     });
