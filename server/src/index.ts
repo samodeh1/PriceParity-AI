@@ -131,7 +131,7 @@ app.get('/api/widget', async (req: any, res: any) => {
 
                         // Use simple string concatenation to avoid backtick crashes
                         const isSmall = (el.offsetWidth || el.parentElement.offsetWidth || 300) < 250;
-                        el.innerHTML = isSmall ? '✨ ' + formatted : '✨ Residents of ' + COUNTRY + ' pay only <b>' + formatted + '</b>';
+                        el.innerHTML = isSmall ? ' ' + formatted : ' Residents of ' + COUNTRY + ' pay only <b>' + formatted + '</b>';
 
                         // 3. SAFE STYLING (No backticks used here)
                         el.style.display = 'inline-flex';
