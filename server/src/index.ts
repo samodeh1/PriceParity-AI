@@ -40,7 +40,7 @@ app.post('/api/calculate', protect, async (req: any, res: Response) => {
         if (!user) return res.status(404).json({ message: "User not found" });
 
         const result = calculatePPPPrice(price, country);
-        let pitch = "Upgrade to Pro to unlock AI Marketing Pitches 🚀";
+        let pitch = "Upgrade to Pro to unlock AI Marketing Pitches ";
         
         if (user.isPro) {
             pitch = await generateLocalizedPitch(productName, result.localPriceFormatted, result.suggestedPrice, country);
@@ -109,24 +109,44 @@ app.get('/api/widget', async (req: any, res: Response) => {
 
         res.send(`
             (function() {
-                function inject() {
+                function applyPriceParity() {
+                    // Find all elements with the price attribute
                     const targets = document.querySelectorAll('[data-pp-price]');
+                    
                     targets.forEach(el => {
+                        // Avoid double-processing the same element
+                        if (el.getAttribute('data-pp-done') === 'true') return;
+
                         const p = parseFloat(el.getAttribute('data-pp-price'));
                         if (isNaN(p)) return;
-                        el.innerHTML = '✨ Local Offer: Residents of ${result.countryName} pay only <b>${result.localPriceFormatted}</b>';
-                        el.style.cssText = "display:inline-flex; align-items:center; gap:8px; background:rgba(37,99,235,0.05); color:#2563eb; padding:8px 16px; border-radius:99px; font-size:13px; font-weight:700; border:1px solid rgba(37,99,235,0.1); animation: pulse 2s infinite; font-family:sans-serif;";
+
+                        // Calculation Logic
+                        const multiplier = ${result.suggestedPrice / 100};
+                        const localValue = Math.round(p * multiplier * ${pppData[countryCode]?.rate || 1});
+                        const formatted = "${result.symbol} " + localValue.toLocaleString();
+
+                        // Update the UI
+                        el.innerHTML = '<span style="display:inline-flex; align-items:center; gap:4px; background:rgba(37,99,235,0.08); color:#2563eb; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:700; border:1px solid rgba(37,99,235,0.1); animation: pulse 2s infinite;">✨ ' + formatted + '</span>';
+                        
+                        el.setAttribute('data-pp-done', 'true');
                     });
 
+                    // Update any Checkout Links
                     if ("${discountCode}") {
-                        document.querySelectorAll('a[href*="lemonsqueezy.com"], a[href*="gumroad.com"]').forEach(link => {
-                            const url = new URL(link.href);
-                            url.searchParams.set('checkout[discount_code]', "${discountCode}");
-                            link.href = url.toString();
+                        document.querySelectorAll('a[href*="lemonsqueezy.com"], a[href*="gumroad.com"], a[href*="stripe.com"]').forEach(link => {
+                            try {
+                                const url = new URL(link.href);
+                                url.searchParams.set('checkout[discount_code]', "${discountCode}");
+                                link.href = url.toString();
+                            } catch(e) {}
                         });
                     }
                 }
-                document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
+
+                // THE SENIOR FIX: Run the scanner every 1 second
+                // This ensures we catch products that load late via React/APIs
+                setInterval(applyPriceParity, 1000);
+                applyPriceParity();
             })();
         `);
     } catch (e) { res.status(500).send(""); }
