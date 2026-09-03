@@ -201,7 +201,12 @@ app.get('/api/widget', async (req: any, res: any) => {
                            finalDisplayPrice = "${result.symbol} " + localVal.toLocaleString();
                         }
 
-                        el.innerHTML = '  ${result.countryName} pay only <b>' + finalDisplayPrice + '</b>';
+                         const fairLocal = Math.round(basePrice * MULTIPLIER * RATE);
+                         const formatted = SYMBOL + " " + fairLocal.toLocaleString();
+
+                        // Use simple string concatenation to avoid backtick crashes
+                         const isSmall = (el.offsetWidth || el.parentElement.offsetWidth || 300) < 250;
+                         el.innerHTML = isSmall ? ' ' + formatted : ' Residents of ' + COUNTRY + ' pay only <b>' + formatted + '</b>';
                         
                         el.style.cssText = "display: inline-flex; align-items: center; gap: 8px; background: rgba(37, 99, 235, 0.05); color: #2563eb; padding: 8px 16px; border-radius: 99px; font-size: 13px; font-weight: 700; border: 1px solid rgba(37, 99, 235, 0.1); animation: pulse 2s infinite; font-family: sans-serif; white-space: nowrap;";
                         
