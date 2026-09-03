@@ -219,27 +219,97 @@ app.get('/api/countries', (req, res) => res.json(getCountryList()));
 
 // server/src/index.ts -> /api/widget
 
+// app.get('/api/widget', async (req: any, res: any) => {
+//     try {
+//         const originalPrice = Number(req.query.price) || 12;
+//         const clientIp = requestIp.getClientIp(req) || "";
+//         const geo = geoip.lookup(clientIp);
+//         const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
+
+//         const result = calculatePPPPrice(originalPrice, countryCode);
+//         const pppMultiplier = result.suggestedPrice / originalPrice;
+//         const currentRate = pppData[countryCode.toUpperCase()]?.rate || 1;
+
+//         res.setHeader('Content-Type', 'application/javascript');
+//         res.setHeader('Access-Control-Allow-Origin', '*'); 
+
+//         res.send(`
+//             (function() {
+//                 function inject() {
+//                     const targets = document.querySelectorAll('[data-pp-price]');
+//                     targets.forEach(el => {
+//                         if (el.getAttribute('data-pp-done') === 'true') return;
+
+//                         const p = parseFloat(el.getAttribute('data-pp-price'));
+//                         if (isNaN(p)) return;
+
+//                         const localValue = Math.round(p * ${pppMultiplier} * ${currentRate});
+//                         const formatted = "${result.symbol} " + localValue.toLocaleString();
+
+//                         const isSmall = (el.offsetWidth || el.parentElement.offsetWidth || 300) < 250;
+//                         const message = isSmall 
+//                             ? ' Pay <b>' + formatted + '</b>' 
+//                             : ' Residents of ${result.countryName} pay only <b>' + formatted + '</b>';
+
+//                         el.innerHTML = message;
+                        
+//                         // --- THE PRO LAYOUT FIX ---
+//                         // 1. We use 'flex' with 'width: 100%' to force it to a new line
+//                         // 2. We use '!important' so it overrides any subscriber's CSS
+//                         el.style.cssText = "display: flex !important; width: 100% !important; flex-basis: 100% !important; margin-top: 8px !important; color: #2563eb !important; font-size: 11px !important; font-family: system-ui, sans-serif !important; border-top: 1px dashed rgba(37,99,235,0.2) !important; padding-top: 8px !important; line-height: 1.2 !important; white-space: normal !important;";
+                        
+//                         el.setAttribute('data-pp-done', 'true');
+//                     });
+//                 }
+//                 document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
+//                 setInterval(inject, 1500); 
+//             })();
+//         `);
+//     } catch (e) { 
+//         res.status(500).send(""); 
+//     }
+// });
+
+// server/src/index.ts -> /api/widget
+
 app.get('/api/widget', async (req: any, res: any) => {
     try {
         const originalPrice = Number(req.query.price) || 12;
         const clientIp = requestIp.getClientIp(req) || "";
         const geo = geoip.lookup(clientIp);
-        const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
+        
+        // 1. Prioritize the query param, then the IP lookup
+        let countryCode = (req.query.test_country as string)?.toUpperCase() || (geo ? geo.country : "US");
 
         const result = calculatePPPPrice(originalPrice, countryCode);
-        const pppMultiplier = result.suggestedPrice / originalPrice;
-        const currentRate = pppData[countryCode.toUpperCase()]?.rate || 1;
+        const pppMultiplier = result.multiplier || 0.4;
+        const countryConfig = pppData[countryCode];
+        const currentRate = countryConfig ? countryConfig.rate : 1;
 
         res.setHeader('Content-Type', 'application/javascript');
         res.setHeader('Access-Control-Allow-Origin', '*'); 
 
         res.send(`
             (function() {
+                // --- SENIOR TEST LOGIC ---
+                // This checks the SUBSCRIBER'S URL bar for ?test_country
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlTestCountry = urlParams.get('test_country');
+                const currentScriptUrl = new URL(document.currentScript.src);
+
+                // If user typed a test country in the address bar but the script 
+                // doesn't have it yet, we reload the script with that country.
+                if (urlTestCountry && !currentScriptUrl.searchParams.get('test_country')) {
+                    const newScript = document.createElement('script');
+                    newScript.src = currentScriptUrl.origin + currentScriptUrl.pathname + '?price=${originalPrice}&test_country=' + urlTestCountry;
+                    document.body.appendChild(newScript);
+                    return; // Stop this version, the new one is coming
+                }
+
                 function inject() {
                     const targets = document.querySelectorAll('[data-pp-price]');
                     targets.forEach(el => {
                         if (el.getAttribute('data-pp-done') === 'true') return;
-
                         const p = parseFloat(el.getAttribute('data-pp-price'));
                         if (isNaN(p)) return;
 
@@ -247,17 +317,10 @@ app.get('/api/widget', async (req: any, res: any) => {
                         const formatted = "${result.symbol} " + localValue.toLocaleString();
 
                         const isSmall = (el.offsetWidth || el.parentElement.offsetWidth || 300) < 250;
-                        const message = isSmall 
-                            ? ' Pay <b>' + formatted + '</b>' 
-                            : ' Residents of ${result.countryName} pay only <b>' + formatted + '</b>';
+                        const message = isSmall ? ' Pay <b>' + formatted + '</b>' : ' Residents of ${result.countryName} pay only <b>' + formatted + '</b>';
 
                         el.innerHTML = message;
-                        
-                        // --- THE PRO LAYOUT FIX ---
-                        // 1. We use 'flex' with 'width: 100%' to force it to a new line
-                        // 2. We use '!important' so it overrides any subscriber's CSS
                         el.style.cssText = "display: flex !important; width: 100% !important; flex-basis: 100% !important; margin-top: 8px !important; color: #2563eb !important; font-size: 11px !important; font-family: system-ui, sans-serif !important; border-top: 1px dashed rgba(37,99,235,0.2) !important; padding-top: 8px !important; line-height: 1.2 !important; white-space: normal !important;";
-                        
                         el.setAttribute('data-pp-done', 'true');
                     });
                 }
@@ -265,9 +328,7 @@ app.get('/api/widget', async (req: any, res: any) => {
                 setInterval(inject, 1500); 
             })();
         `);
-    } catch (e) { 
-        res.status(500).send(""); 
-    }
+    } catch (e) { res.status(500).send(""); }
 });
 
 mongoose.connect(process.env.MONGO_URI as string)
