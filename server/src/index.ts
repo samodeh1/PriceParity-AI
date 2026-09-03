@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
@@ -6,193 +6,96 @@ import requestIp from 'request-ip';
 import geoip from 'geoip-lite';
 import mongoose from 'mongoose';
 
-// Project logic imports
+// 1. Imports from local files
 import { calculatePPPPrice, getCountryList, pppData } from './pricingEngine.js';
 import { generateLocalizedPitch } from './aiEngine.js';
 import authRoutes from './routes/auth.js';
 import { protect } from './middleware/authMiddleware.js';
 
-// Database Models
+// 2. Database Models
 import Strategy from './models/Strategy.js';
 import User from './models/User.js';
 
 dotenv.config();
-
 const app = express();
 
-// --- 1. MIDDLEWARE ---
-// Keep it only for your main dashboard routes.
-const privateOrigins = [
-  "https://priceparityai.com",
-  "https://www.priceparityai.com",
-  "https://price-parity-ai-2fbe.vercel.app", 
-  "http://localhost:5173"
-];
-
-// 2. Global CORS for your private Dashboard
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || privateOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(null, false);
-    }
-  },
-  credentials: true
+    origin: ["https://priceparityai123.vercel.app", "https://priceparityai.com", "http://localhost:5173"],
+    credentials: true
 }));
 
-// Stores the raw string bytes on the request for Lemon Squeezy signature verification
 app.use(express.json({
-  verify: (req: any, res, buf) => {
-    req.rawBody = buf; 
-  }
+    verify: (req: any, res, buf) => { req.rawBody = buf; }
 }));
 
-// Route registered once right after parser middleware
-app.use('/api/auth', authRoutes); 
+// --- ROUTES ---
 
-// --- 2. CORE SaaS LOGIC: CALCULATION ---
-app.post('/api/calculate', protect, async (req: any, res: any) => {
+app.post('/api/calculate', protect, async (req: any, res: Response) => {
     const { price, country, productName } = req.body;
-    
     try {
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        //  TIMEZONE-SAFE EXPIRATION VALIDATION CHECK
-        const now = new Date();
-        const hasExpired = user.proExpiry && new Date(user.proExpiry) < now;
-
-        if (hasExpired && user.isPro) {
-            user.isPro = false;
-            await user.save(); // Revokes access in MongoDB permanently
-            console.log(`Fulfillment Guard: Revoked expired access for User ${user._id}`);
-        }
-
-        const pricing = calculatePPPPrice(price, country);
-        let pitch = "Upgrade to Pro to unlock AI Marketing Pitches ";
+        const result = calculatePPPPrice(price, country);
+        let pitch = "Upgrade to Pro to unlock AI Marketing Pitches 🚀";
         
-        // Monetization Check: Evaluates your fresh, validated user instance status
-        if (user?.isPro) {
-            pitch = await generateLocalizedPitch(
-                productName, 
-                pricing.localPriceFormatted, 
-                pricing.suggestedPrice, // <--- New Argument added here
-                country
-            );
+        if (user.isPro) {
+            pitch = await generateLocalizedPitch(productName, result.localPriceFormatted, result.suggestedPrice, country);
         }
 
         const newStrategy = new Strategy({
             user: user._id,
             productName,
             originalPrice: price,
-            suggestedPrice: pricing.suggestedPrice,
+            suggestedPrice: result.suggestedPrice,
             country,
-            pitch: pitch
+            pitch
         });
         await newStrategy.save();
 
-        res.json({
-            ...pricing,
-            productName,
-            localizedPitch: pitch,
-            isPro: user.isPro // Returns false back to frontend if they expired!
-        });
+        res.json({ ...result, productName, localizedPitch: pitch, isPro: user.isPro });
     } catch (error) {
-        console.error("Calculation Error:", error);
         res.status(500).json({ error: "Error generating strategy" });
     }
 });
 
-
-// --- 3. MONETIZATION: LEMON SQUEEZY WEBHOOK ---
-app.post('/api/webhook/lemonsqueezy', async (req: any, res: any) => {
+app.post('/api/webhook/lemonsqueezy', async (req: any, res: Response) => {
     try {
-        const secret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
-        if (!secret) {
-            console.error("Missing LEMON_SQUEEZY_WEBHOOK_SECRET env variable");
-            return res.status(500).send('Configuration Error');
-        }
-
-        const hmac = crypto.createHmac('sha256', secret);
+        const hmac = crypto.createHmac('sha256', process.env.LEMON_SQUEEZY_WEBHOOK_SECRET || "");
         const digest = Buffer.from(hmac.update(req.rawBody).digest('hex'), 'utf8');
         const signature = Buffer.from(req.get('X-Signature') || '', 'utf8');
 
-        if (digest.length !== signature.length || !crypto.timingSafeEqual(digest, signature)) {
-            return res.status(401).send('Invalid signature');
-        }
+        if (!crypto.timingSafeEqual(digest, signature)) return res.status(401).send('Invalid signature');
 
-        const { meta, data } = req.body;
+        const { meta } = req.body;
         if (meta.event_name === 'order_created' || meta.event_name === 'subscription_created') {
             const userId = meta.custom_data.user_id;
-            
-            // Extract the variant ID safely from the payload relationships or attributes
-            const variantId = String(data?.attributes?.variant_id || data?.relationships?.variant?.data?.id || "");
-            const isYearly = variantId === "2064330";
-
             const expiryDate = new Date();
-            if (isYearly) {
-                // Award 365 days for your Annual Plan
-                expiryDate.setDate(expiryDate.getDate() + 365);
-                console.log(`Processing Annual Plan (ID: ${variantId}) for User ${userId}`);
-            } else {
-                // Default to 30 days for your Monthly Plan
-                expiryDate.setDate(expiryDate.getDate() + 30);
-                console.log(`Processing Monthly Plan (ID: ${variantId}) for User ${userId}`);
-            }
-
-            await User.findByIdAndUpdate(userId, { 
-                isPro: true, 
-                proExpiry: expiryDate 
-            });
-            
-            console.log(`Global Fulfillment: User ${userId} upgraded via Lemon Squeezy.`);
-        } 
-        // ➡️ NEWLY INJECTED CANCELLATION BLOCK
-        else if (meta.event_name === 'subscription_cancelled') {
-            const userId = meta.custom_data.user_id;
-            
-            // This logs it directly into your Render dashboard terminal console text logs
-            console.log(`Global Cancellation Webhook: User ${userId} cancelled auto-renew. Access expires on schedule.`);
+            expiryDate.setUTCDate(expiryDate.getUTCDate() + 30);
+            await User.findByIdAndUpdate(userId, { isPro: true, proExpiry: expiryDate });
         }
-
-        res.status(200).send('Webhook processed');
-    } catch (err) {
-        console.error('Webhook Error:', err);
-        res.status(500).send('Internal Server Error');
-    }
+        res.status(200).send('OK');
+    } catch (err) { res.status(500).send('Internal Error'); }
 });
 
-
-// --- 4. DATA HISTORY & UTILITIES ---
-app.get('/api/strategies', protect, async (req: any, res: any) => {
+app.get('/api/strategies', protect, async (req: any, res: Response) => {
     try {
         const history = await Strategy.find({ user: req.user.id }).sort({ createdAt: -1 });
         res.json(history);
-    } catch (error) {
-        res.status(500).json({ message: "Could not fetch history" });
-    }
+    } catch (error) { res.status(500).json({ message: "Error" }); }
 });
 
 app.get('/api/countries', (req, res) => res.json(getCountryList()));
 
-// --- 5. SUBSCRIBER WIDGET ENGINE ---
-app.use('/api/widget', (req, res, next) => {
-    // This tells every browser in the world: "You are allowed to run this script"
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET');
-    next();
-});
-app.get('/api/widget', async (req: any, res: any) => {
+app.get('/api/widget', async (req: any, res: Response) => {
     try {
+        const originalPrice = Number(req.query.price) || 12;
         const clientIp = requestIp.getClientIp(req) || "";
         const geo = geoip.lookup(clientIp);
         const countryCode = (req.query.test_country as string) || (geo ? geo.country : "US");
 
-        // 1. Run the Tiered Math (Base price 100 for multiplier calculation)
-        const result = calculatePPPPrice(100, countryCode);
+        const result = calculatePPPPrice(originalPrice, countryCode);
         
-        // 2. Map Tiers to your Subscriber's Discount Codes
         let discountCode = "";
         if (result.discountTier === "LOW") discountCode = "GLOBAL20";
         if (result.discountTier === "MID") discountCode = "GLOBAL50";
@@ -203,50 +106,36 @@ app.get('/api/widget', async (req: any, res: any) => {
 
         res.send(`
             (function() {
-                function applyPriceParity() {
-                    // Step A: Update Visual Display Elements
-                    const displays = document.querySelectorAll('[data-pp-price]');
-                    displays.forEach(el => {
-                        const originalPrice = parseFloat(el.getAttribute('data-pp-price'));
-                        if (isNaN(originalPrice)) return;
-
-                        // Calculate the same local price shown on the dashboard
-                        const multiplier = ${result.suggestedPrice / 100};
-                        const localPrice = "${result.symbol} " + Math.round(originalPrice * multiplier * ${pppData[countryCode]?.rate || 1}).toLocaleString();
-
-                        el.innerHTML = '✨ Local Offer: Residents of ${result.countryName} pay only <b>' + localPrice + '</b>';
-                        el.style.cssText = "display:inline-flex; align-items:center; gap:8px; background:rgba(37,99,235,0.05); color:#2563eb; padding:8px 16px; border-radius:99px; font-size:13px; font-weight:700; border:1px solid rgba(37,99,235,0.1); margin: 10px 0; font-family: sans-serif;";
+                function inject() {
+                    const targets = document.querySelectorAll('[data-pp-price]');
+                    targets.forEach(el => {
+                        const p = parseFloat(el.getAttribute('data-pp-price'));
+                        if (isNaN(p)) return;
+                        el.innerHTML = '✨ Local Offer: Residents of ${result.countryName} pay only <b>${result.localPriceFormatted}</b>';
+                        el.style.cssText = "display:inline-flex; align-items:center; gap:8px; background:rgba(37,99,235,0.05); color:#2563eb; padding:8px 16px; border-radius:99px; font-size:13px; font-weight:700; border:1px solid rgba(37,99,235,0.1); animation: pulse 2s infinite; font-family:sans-serif;";
                     });
 
-                    // Step B: Auto-Apply Discount to Checkout Links
                     if ("${discountCode}") {
-                        const links = document.querySelectorAll('a[href*="lemonsqueezy.com"], a[href*="gumroad.com"], a[href*="stripe.com"]');
-                        links.forEach(link => {
+                        document.querySelectorAll('a[href*="lemonsqueezy.com"], a[href*="gumroad.com"]').forEach(link => {
                             const url = new URL(link.href);
-                            url.searchParams.set('discount_code', "${discountCode}");
-                            // Lemon Squeezy specific format
                             url.searchParams.set('checkout[discount_code]', "${discountCode}");
                             link.href = url.toString();
                         });
                     }
                 }
-
-                document.readyState === 'loading' 
-                    ? document.addEventListener('DOMContentLoaded', applyPriceParity) 
-                    : applyPriceParity();
+                document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
             })();
         `);
     } catch (e) { res.status(500).send(""); }
 });
 
-// --- 6. DATABASE & SERVER START ---
-const PORT = process.env.PORT || 10000;
-
 mongoose.connect(process.env.MONGO_URI as string)
-    .then(() => {
-        console.log("PriceParity Live DB Connected");
-        app.listen(PORT, "0.0.0.0", () => {
-            console.log(`PriceParity Engine Live on Port ${PORT}`);
-        });
-    })
-    .catch(err => console.error("Database Error:", err));
+    .then(() => console.log("PriceParity SaaS DB Connected"))
+    .catch(err => console.error("Database connection failure:", err));
+
+app.use('/api/auth', authRoutes);
+
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`PriceParity Engine Live on Port ${PORT}`);
+});
