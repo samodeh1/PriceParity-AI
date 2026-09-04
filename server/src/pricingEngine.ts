@@ -1,111 +1,5 @@
 // server/src/pricingEngine.ts
 
-// interface CountryData {
-//     tier: 'LOW' | 'MID' | 'HIGH' | 'NONE';
-//     rate?: number; // Optional: used for specific overrides like Nigeria
-//     symbol?: string;
-// }
-
-// export const pppData: Record<string, CountryData> = {
-//     // --- TIER: NONE (Full Price - GLOBAL20) ---
-//     "US": { tier: "NONE" }, "CH": { tier: "NONE" }, "SG": { tier: "NONE" },
-//     "LU": { tier: "NONE" }, "NO": { tier: "NONE" }, "IE": { tier: "NONE" },
-//     "QA": { tier: "NONE" }, "IS": { tier: "NONE" }, "DK": { tier: "NONE" },
-//     "AU": { tier: "NONE" }, "AE": { tier: "NONE" },
-
-//     // --- TIER: LOW (20% Off - GLOBAL20) ---
-//     "GB": { tier: "LOW" }, "DE": { tier: "LOW" }, "FR": { tier: "LOW" },
-//     "JP": { tier: "LOW" }, "CA": { tier: "LOW" }, "KR": { tier: "LOW" },
-//     "IT": { tier: "LOW" }, "ES": { tier: "LOW" }, "NL": { tier: "LOW" },
-//     "SE": { tier: "LOW" }, "AT": { tier: "LOW" }, "BE": { tier: "LOW" },
-//     "FI": { tier: "LOW" }, "NZ": { tier: "LOW" }, "HK": { tier: "LOW" },
-//     "IL": { tier: "LOW" }, "KW": { tier: "LOW" }, "SA": { tier: "LOW" },
-
-//     // --- TIER: MID (50% Off - GLOBAL50) ---
-//     "BR": { tier: "MID" }, "MX": { tier: "MID" }, "CN": { tier: "MID" },
-//     "IN": { tier: "MID" }, "MY": { tier: "MID" }, "TH": { tier: "MID" },
-//     "PH": { tier: "MID" }, "RU": { tier: "MID" }, "TR": { tier: "MID" },
-//     "ID": { tier: "MID" }, "CL": { tier: "MID" }, "CO": { tier: "MID" },
-//     "PE": { tier: "MID" }, "AR": { tier: "MID" }, "VN": { tier: "MID" },
-//     "PL": { tier: "MID" }, "GR": { tier: "MID" }, "PT": { tier: "MID" },
-//     "CZ": { tier: "MID" }, "HU": { tier: "MID" }, "RO": { tier: "MID" },
-//     "UA": { tier: "MID" }, "DZ": { tier: "MID" }, "MA": { tier: "MID" },
-
-//     // --- TIER: HIGH (70% Off - GLOBAL70) ---
-//     "NG": { tier: "HIGH", rate: 1339, symbol: "₦" }, // Explicit override for your home market
-//     "GH": { tier: "HIGH", rate: 15, symbol: "GH₵" },
-//     "KE": { tier: "HIGH", rate: 129, symbol: "KSh" },
-//     "ZA": { tier: "HIGH", rate: 18.5, symbol: "R" },
-//     "EG": { tier: "HIGH", rate: 48, symbol: "E£" },
-//     "PK": { tier: "HIGH", rate: 278, symbol: "₨" },
-//     "BD": { tier: "HIGH", rate: 117, symbol: "৳" },
-//     "ET": { tier: "HIGH" }, "TZ": { tier: "HIGH" }, "UG": { tier: "HIGH" },
-//     "RW": { tier: "HIGH" }, "ZM": { tier: "HIGH" }, "NP": { tier: "HIGH" },
-//     "LK": { tier: "HIGH" }, "MM": { tier: "HIGH" }, "KH": { tier: "HIGH" },
-//     "DEFAULT": { tier: "LOW", multiplier: 0.4, symbol: "$", rate: 1 }
-// };
-
-// // HELPER: To provide a clean list of all 195 countries to the dropdown
-// export const getCountryList = () => {
-//     const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
-//     // This loops through all ISO codes available in the browser's international library
-//     const allCodes = [
-//         "AF", "AL", "DZ", "AS", "AD", "AO", "AI", "AQ", "AG", "AR", "AM", "AW", "AU", "AT",
-//         "AZ", "BS", "BH", "BD", "BB", "BY", "BE", "BZ", "BJ", "BM", "BT", "BO", "BQ", "BA", "BW", "BV", "BR",
-//         "IO", "BN", "BG", "BF", "BI", "CV", "KH", "CM", "CA", "KY", "CF", "TD", "CL", "CN", "CX", "CC", "CO",
-//         "KM", "CD", "CG", "CK", "CR", "HR", "CU", "CW", "CY", "CZ", "CI", "DK", "DJ", "DM", "DO", "EC", "EG",
-//         "SV", "GQ", "ER", "EE", "SZ", "ET", "FK", "FO", "FJ", "FI", "FR", "GF", "PF", "TF", "GA", "GM", "GE",
-//         "DE", "GH", "GI", "GR", "GL", "GD", "GP", "GU", "GT", "GG", "GN", "GW", "GY", "HT", "HM", "VA", "HN",
-//         "HK", "HU", "IS", "IN", "ID", "IR", "IQ", "IE", "IM", "IL", "IT", "JM", "JP", "JE", "JO", "KZ", "KE",
-//         "KI", "KP", "KR", "KW", "KG", "LA", "LV", "LB", "LS", "LR", "LY", "LI", "LT", "LU", "MO", "MG", "MW",
-//         "MY", "MV", "ML", "MT", "MH", "MQ", "MR", "MU", "YT", "MX", "FM", "MD", "MC", "MN", "ME", "MS", "MA",
-//         "MZ", "MM", "NA", "NR", "NP", "NL", "NC", "NZ", "NI", "NE", "NG", "NU", "NF", "MP", "NO", "OM", "PK",
-//         "PW", "PS", "PA", "PG", "PY", "PR", "QA", "MK", "RO", "RU", "RW", "RE", "BL", "SH", "KN", "LC", "MF",
-//         "PM", "VC", "WS", "SM", "ST", "SA", "SN", "RS", "SC", "SL", "SG", "SX", "SK", "SI", "SB", "SO", "ZA",
-//         "GS", "SS", "ES", "LK", "SD", "SR", "SJ", "SE", "CH", "SY", "TW", "TJ", "TZ", "TH", "TL", "TG", "TK",
-//         "TO", "TT", "TN", "TR", "TM", "TC", "TV", "UG", "UA", "AE", "GB", "UM", "UY", "UZ", "VU", "VE", "VN",
-//         "VG", "VI", "WF", "EH", "YE", "ZM", "ZW"
-//     ];
-
-//     return allCodes.map(code => ({
-//         code,
-//         name: regionNames.of(code) || code
-//     })).sort((a, b) => a.name.localeCompare(b.name));
-// };
-
-
-// export const calculatePPPPrice = (originalPrice: number, countryCode: string) => {
-//     const code = countryCode.toUpperCase();
-//     const config = pppData[code] || { tier: "MID" }; // Default to 50% off for unlisted
-
-//     const tierMultipliers = {
-//         "NONE": 1.0,
-//         "LOW": 0.8,
-//         "MID": 0.5,
-//         "HIGH": 0.3
-//     };
-
-//     const multiplier = tierMultipliers[config.tier];
-//     const suggestedPriceUSD = originalPrice * multiplier;
-
-//     // Resolve Country Name and Currency Symbol automatically
-//     const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
-//     const countryName = regionNames.of(code) || code;
-
-//     // Logic: Use hardcoded rate if exists (like NG), otherwise stay in USD symbol
-//     const symbol = config.symbol || "$";
-//     const localAmount = config.rate ? (suggestedPriceUSD * config.rate) : suggestedPriceUSD;
-
-//     return {
-//         suggestedPrice: Number(suggestedPriceUSD.toFixed(2)),
-//         localPriceFormatted: `${symbol} ${Math.round(localAmount).toLocaleString()}`,
-//         discountPercentage: Math.round((1 - multiplier) * 100),
-//         discountTier: config.tier,
-//         symbol: symbol,
-//         countryName: countryName
-//     };
-    
-// };
 interface CountryData {
     tier: 'LOW' | 'MID' | 'HIGH' | 'NONE';
     currency: string;
@@ -142,7 +36,7 @@ export const pppData: Record<string, CountryData> = {
   "BW": { tier: "MID",  currency: "BWP", symbol: "P", rate: 13.5 },
   "BY": { tier: "MID",  currency: "BYN", symbol: "Br", rate: 3.27 },
   "BZ": { tier: "MID",  currency: "BZD", symbol: "$", rate: 2.0 },
-  "CA": { tier: "LOW",  currency: "CAD", symbol: "C$", rate: 1.38 },
+  "CA": { tier: "NONE",  currency: "CAD", symbol: "C$", rate: 1.0 },
   "CD": { tier: "HIGH", currency: "CDF", symbol: "FC", rate: 2840.0 },
   "CF": { tier: "HIGH", currency: "XAF", symbol: "FCFA", rate: 563.2 },
   "CG": { tier: "HIGH", currency: "XAF", symbol: "FCFA", rate: 563.2 },
@@ -166,6 +60,7 @@ export const pppData: Record<string, CountryData> = {
   "EC": { tier: "MID",  currency: "USD", symbol: "$", rate: 1.0 },
   "EE": { tier: "LOW",  currency: "EUR", symbol: "€", rate: 0.86 },
   "EG": { tier: "HIGH", currency: "EGP", symbol: "E£", rate: 48.5 },
+  "EH": { tier: "MID",  currency: "MAD", symbol: "د.م.", rate: 9.85 },
   "ER": { tier: "HIGH", currency: "ERN", symbol: "Nfk", rate: 15.0 },
   "ES": { tier: "LOW",  currency: "EUR", symbol: "€", rate: 0.86 },
   "ET": { tier: "HIGH", currency: "ETB", symbol: "Br", rate: 112.0 },
@@ -295,6 +190,7 @@ export const pppData: Record<string, CountryData> = {
   "TV": { tier: "HIGH", currency: "AUD", symbol: "A$", rate: 1.39 },
   "TW": { tier: "LOW",  currency: "TWD", symbol: "NT$", rate: 31.85 },
   "TZ": { tier: "HIGH", currency: "TZS", symbol: "TSh", rate: 2725.0 },
+  "TK": { tier: "MID",  currency: "NZD", symbol: "NZ$", rate: 1.62 },
   "UA": { tier: "HIGH", currency: "UAH", symbol: "₴", rate: 41.35 },
   "UG": { tier: "HIGH", currency: "UGX", symbol: "USh", rate: 3670.0 },
   "US": { tier: "NONE", currency: "USD", symbol: "$", rate: 1.0 },
@@ -305,12 +201,14 @@ export const pppData: Record<string, CountryData> = {
   "VE": { tier: "HIGH", currency: "VES", symbol: "Bs.S", rate: 36.65 },
   "VN": { tier: "HIGH", currency: "VND", symbol: "₫", rate: 24780.0 },
   "VU": { tier: "HIGH", currency: "VUV", symbol: "VT", rate: 118.0 },
+  "WF": { tier: "MID",  currency: "XPF", symbol: "₣", rate: 119.33 },
   "WS": { tier: "MID",  currency: "WST", symbol: "T", rate: 2.72 },
   "XK": { tier: "MID",  currency: "EUR", symbol: "€", rate: 0.86 },
   "YE": { tier: "HIGH", currency: "YER", symbol: "﷼", rate: 250.35 },
   "ZA": { tier: "MID",  currency: "ZAR", symbol: "R", rate: 18.2 },
   "ZM": { tier: "HIGH", currency: "ZMW", symbol: "ZK", rate: 26.4 },
   "ZW": { tier: "HIGH", currency: "ZWG", symbol: "ZiG", rate: 13.95 }
+  
 };
 
 // HELPER: To provide a clean list of all 195 countries to the dropdown
