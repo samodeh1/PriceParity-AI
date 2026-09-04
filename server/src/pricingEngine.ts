@@ -114,6 +114,7 @@ export interface CountryConfig {
   tier: 'NONE' | 'LOW' | 'MID' | 'HIGH';
   currency: string; // Dynamic currency code parameter used for standard JSON API fetches
   symbol: string;   // The visual symbol displayed next to prices
+  rate?: number;    // Optional USD-to-local-currency conversion rate
 }
 
 export const pppData: Record<string, CountryConfig> = {
@@ -311,7 +312,7 @@ export const calculatePPPPrice = (originalPrice: number, countryCode: string) =>
         "NONE": 1.0,
         "LOW": 0.8,
         "MID": 0.5,
-        "HIGH": 0.4
+        "HIGH": 0.3
     };
 
     const multiplier = tierMultipliers[config.tier];
