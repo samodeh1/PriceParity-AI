@@ -340,8 +340,16 @@ app.get('/api/widget', async (req: any, res: any) => {
     // 1. Prioritize the query param, then the IP lookup
     let countryCode = (req.query.test_country as string)?.toUpperCase() || (geo ? geo.country : "US");
     
-    const result = calculatePPPPrice(originalPrice, countryCode) || {};
-    const pppMultiplier = result.multiplier || 0.4; // Fallback to 0.4 if missing
+    const result = calculatePPPPrice(originalPrice, countryCode) || {} as any;
+
+    const tierMultipliers: Record<string, number> = {
+      NONE: 1,
+      LOW: 0.8,
+      MID: 0.5,
+      HIGH: 0.3
+    };
+    const pppMultiplier = tierMultipliers[(result.discountTier as string) || "MID"] ?? 0.4;
+
     const countryConfig = pppData[countryCode];
     const currentRate = countryConfig && typeof countryConfig.rate === 'number' ? countryConfig.rate : 1;
     
