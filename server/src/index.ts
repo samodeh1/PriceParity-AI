@@ -406,64 +406,57 @@ app.get('/api/countries', (req, res) => res.json(getCountryList()));
 //   }
 // });
 
+// server/src/index.ts -> /api/widget
+
 app.get('/api/widget', async (req: any, res: any) => {
     try {
         const originalPrice = Number(req.query.price) || 12;
         const clientIp = requestIp.getClientIp(req) || "";
         const geo = geoip.lookup(clientIp);
+        
+        // 1. Detect Country Code (Test flag or real IP)
         const countryCode = (req.query.test_country as string)?.toUpperCase() || (geo ? geo.country : "US");
 
+        // 2. Get the official logic from your engine
         const result = calculatePPPPrice(originalPrice, countryCode);
-        
-        // 1. Map the 3 Tiers to the specific codes your customers will create
-        const tierToCode = {
-            "LOW": "GLOBAL20",
-            "MID": "GLOBAL50",
-            "HIGH": "GLOBAL70",
-            "NONE": ""
-        };
-        const discountCode = tierToCode[result.discountTier as keyof typeof tierToCode] || "";
 
-        // 2. Pre-calculate the multiplier on server to avoid NaN in browser
-        const pppMultiplier = result.suggestedPrice / originalPrice;
+        // 3. Find the specific rate for this country from our pppData
+        // We use || 1 to avoid a 0 or undefined error
         const currentRate = pppData[countryCode]?.rate || 1;
+        const currentSymbol = pppData[countryCode]?.symbol || "$";
+        const currentMultiplier = result.multiplier; // The 0.3 or 0.5 discount
 
         res.setHeader('Content-Type', 'application/javascript');
         res.setHeader('Access-Control-Allow-Origin', '*'); 
 
+        // 4. Inject the logic as raw strings to avoid browser math errors
         res.send(`
             (function() {
-                function inject() {
-                    const targets = document.querySelectorAll('[data-pp-price]');
-                    targets.forEach(el => {
+                function applyPriceParity() {
+                    const elements = document.querySelectorAll('[data-pp-price]');
+                    elements.forEach(el => {
                         if (el.getAttribute('data-pp-done') === 'true') return;
+
                         const p = parseFloat(el.getAttribute('data-pp-price'));
                         if (isNaN(p)) return;
 
-                        // Math is injected as raw numbers now (No more NaN!)
-                        const localValue = Math.round(p * ${pppMultiplier} * ${currentRate});
-                        const formatted = "${result.symbol} " + localValue.toLocaleString();
+                        // Calculation: Original Price * Regional Discount * Exchange Rate
+                        const localValue = Math.round(p * ${currentMultiplier} * ${currentRate});
+                        
+                        // FORMATTING: symbol + space + number
+                        const formatted = "${currentSymbol} " + localValue.toLocaleString();
 
                         const isSmall = (el.offsetWidth || el.parentElement.offsetWidth || 300) < 250;
-                        const message = isSmall ? ' <b>' + formatted + '</b>' : ' Residents of ${result.countryName} pay only <b>' + formatted + '</b>';
+                        const message = isSmall ? ' ' + formatted : ' Residents of ${result.countryName} pay only <b>' + formatted + '</b>';
 
                         el.innerHTML = message;
-                        el.style.cssText = "display: flex !important; width: 100% !important; margin-top: 8px !important; color: #2563eb !important; font-size: 11px !important; font-family: system-ui, sans-serif !important; border-top: 1px dashed rgba(37,99,235,0.2) !important; padding-top: 8px !important; line-height: 1.2 !important; white-space: normal !important;";
+                        el.style.cssText = "display: flex !important; width: 100% !important; margin-top: 8px !important; color: #2563eb !important; font-size: 11px !important; font-family: system-ui, sans-serif !important; border-top: 1px dashed rgba(37,99,235,0.2) !important; padding-top: 8px !important; line-height: 1.2 !important; white-space: normal !important; box-sizing: border-box !important;";
+                        
                         el.setAttribute('data-pp-done', 'true');
                     });
-
-                    // Auto-apply the Tier Code to all Buy Links
-                    if ("${discountCode}") {
-                        document.querySelectorAll('a[href*="lemonsqueezy.com"], a[href*="gumroad.com"]').forEach(link => {
-                            const url = new URL(link.href);
-                            url.searchParams.set('checkout[discount_code]', "${discountCode}");
-                            url.searchParams.set('discount_code', "${discountCode}");
-                            link.href = url.toString();
-                        });
-                    }
                 }
-                document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
-                setInterval(inject, 1500); 
+                document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', applyPriceParity) : applyPriceParity();
+                setInterval(applyPriceParity, 1500); 
             })();
         `);
     } catch (e) { res.status(500).send(""); }
