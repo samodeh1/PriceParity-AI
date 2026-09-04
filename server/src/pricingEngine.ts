@@ -295,30 +295,53 @@ export const pppData: Record<string, CountryConfig> = {
   "TO": { tier: "MID",  currency: "TOP", symbol: "T$" },
   "TR": { tier: "MID",  currency: "TRY", symbol: "₺" },
   "TT": { tier: "MID",  currency: "TTD", symbol: "$" },
+  "TV": { tier: "MID",  currency: "AUD", symbol: "A$" },
+  "TZ": { tier: "HIGH", currency: "TZS", symbol: "Sh" },
+  "UA": { tier: "MID",  currency: "UAH", symbol: "₴" },
+  "UG": { tier: "HIGH", currency: "UGX", symbol: "Sh" },
+
+  "DEFAULT": { tier: "MID", currency: "USD", symbol: "$" }
 };
 
-export const calculatePPPPrice = (originalPriceUSD: number, countryCode: string) => {
+export const calculatePPPPrice = (
+  originalPriceUSD: number, 
+  countryCode: string,
+  liveRates: Record<string, number>
+) => {
   const code = countryCode.toUpperCase();
+  
+  // Clean fallback pattern: Use default if code is missing entirely
   const config = pppData[code] || pppData["DEFAULT"];
   
-  const tierMultipliers = { "NONE": 1.0, "LOW": 0.8, "MID": 0.5, "HIGH": 0.3 };
+  // Define strict tier percentage drops
+  const tierMultipliers = { 
+    "NONE": 1.0,  // Full price
+    "LOW": 0.8,   // 20% off
+    "MID": 0.5,   // 50% off
+    "HIGH": 0.3   // 70% off
+  };
+  
+  // Step 1: Safely pick the tier multiplier
   const multiplier = tierMultipliers[config.tier];
   
-  // 1. Calculate the adjusted price in USD base
-  const adjustedPriceUSD = originalPriceUSD * multiplier; 
+  // Step 2: Calculate the discount base directly in USD
+  const suggestedPriceUSD = originalPriceUSD * multiplier; 
   
-  // 2. Convert the adjusted USD price to local country currency
-  const localAmount = adjustedPriceUSD * config.rate;
+  // Step 3: Fetch the current live API rate multiplier safely (defaults to 1 if not loaded)
+  const exchangeRate = liveRates[config.currency] || 1;
+  
+  // Step 4: Multiply the discounted USD total by the currency rate
+  const localAmount = suggestedPriceUSD * exchangeRate;
 
+  // Step 5: Automatically retrieve the official English country label mapping
   const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
   const countryName = regionNames.of(code) || code;
 
   return {
-    suggestedPriceUSD: Number(adjustedPriceUSD.toFixed(2)),
+    suggestedPriceUSD: Number(suggestedPriceUSD.toFixed(2)),
     localPriceFormatted: `${config.symbol}${Math.round(localAmount).toLocaleString()}`,
     discountPercentage: Math.round((1 - multiplier) * 100),
     discountTier: config.tier,
-    symbol: config.symbol,
     countryName: countryName
   };
 };
