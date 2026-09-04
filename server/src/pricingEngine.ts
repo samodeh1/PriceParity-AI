@@ -311,7 +311,7 @@ export const calculatePPPPrice = (originalPrice: number, countryCode: string) =>
         "NONE": 1.0,
         "LOW": 0.8,
         "MID": 0.5,
-        "HIGH": 0.3
+        "HIGH": 0.4
     };
 
     const multiplier = tierMultipliers[config.tier];
