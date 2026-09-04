@@ -303,74 +303,35 @@ export const pppData: Record<string, CountryConfig> = {
   "DEFAULT": { tier: "MID", currency: "USD", symbol: "$" }
 };
 
-// Make sure this is at the absolute bottom of your pricingEngine.ts file!
+export const calculatePPPPrice = (originalPrice: number, countryCode: string) => {
+    const code = countryCode.toUpperCase();
+    const config = pppData[code] || { tier: "MID" }; // Default to 50% off for unlisted
 
-export const getCountryList = () => {
-  const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
-  
-  // This contains the list of all standard country codes
-  const allCodes = [
-    "AD", "AE", "AF", "AG", "AL", "AM", "AO", "AR", "AT", "AU", "AZ", "BA", "BB", "BD", "BE", "BF", 
-    "BG", "BH", "BI", "BJ", "BN", "BO", "BR", "BS", "BT", "BW", "BY", "BZ", "CA", "CD", "CF", "CG", 
-    "CH", "CI", "CL", "CM", "CN", "CO", "CR", "CU", "CV", "CY", "CZ", "DE", "DJ", "DK", "DM", "DO", 
-    "DZ", "EC", "EE", "EG", "ER", "ES", "ET", "FI", "FJ", "FM", "FR", "GA", "GB", "GD", "GE", "GH", 
-    "GM", "GN", "GQ", "GR", "GT", "GW", "GY", "HK", "HN", "HR", "HT", "HU", "ID", "IE", "IL", "IN", 
-    "IQ", "IR", "IS", "IT", "JM", "JO", "JP", "KE", "KG", "KH", "KI", "KM", "KN", "KP", "KR", "KW", 
-    "KZ", "LA", "LB", "LC", "LI", "LK", "LR", "LS", "LT", "LU", "LV", "LY", "MA", "MC", "MD", "ME", 
-    "MG", "MH", "MK", "ML", "MM", "MN", "MR", "MT", "MU", "MV", "MW", "MX", "MY", "MZ", "NA", "NE", 
-    "NG", "NI", "NL", "NO", "NP", "NR", "NZ", "OM", "PA", "PE", "PG", "PH", "PK", "PL", "PT", "PW", 
-    "PY", "QA", "RO", "RS", "RU", "RW", "SA", "SB", "SC", "SD", "SE", "SG", "SI", "SK", "SL", "SM", 
-    "SN", "SO", "SR", "SS", "ST", "SV", "SY", "SZ", "TD", "TG", "TH", "TJ", "TL", "TM", "TN", "TO", 
-    "TR", "TT", "TV", "TW", "TZ", "UA", "UG", "US", "UY", "UZ", "VA", "VC", "VE", "VN", "VU", "WS", 
-    "YE", "ZA", "ZM", "ZW"
-  ];
+    const tierMultipliers = {
+        "NONE": 1.0,
+        "LOW": 0.8,
+        "MID": 0.5,
+        "HIGH": 0.3
+    };
 
-  return allCodes.map(code => ({
-    code,
-    name: regionNames.of(code) || code
-  })).sort((a, b) => a.name.localeCompare(b.name));
-};
+    const multiplier = tierMultipliers[config.tier];
+    const suggestedPriceUSD = originalPrice * multiplier;
 
+    // Resolve Country Name and Currency Symbol automatically
+    const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
+    const countryName = regionNames.of(code) || code;
 
-export const calculatePPPPrice = (
-  originalPriceUSD: number, 
-  countryCode: string,
-  liveRates: Record<string, number>
-) => {
-  const code = countryCode.toUpperCase();
-  
-  // Clean fallback pattern: Use default if code is missing entirely
-  const config = pppData[code] || pppData["DEFAULT"];
-  
-  // Define strict tier percentage drops
-  const tierMultipliers = { 
-    "NONE": 1.0,  // Full price
-    "LOW": 0.8,   // 20% off
-    "MID": 0.5,   // 50% off
-    "HIGH": 0.3   // 70% off
-  };
-  
-  // Step 1: Safely pick the tier multiplier
-  const multiplier = tierMultipliers[config.tier];
-  
-  // Step 2: Calculate the discount base directly in USD
-  const suggestedPriceUSD = originalPriceUSD * multiplier; 
-  
-  // Step 3: Fetch the current live API rate multiplier safely (defaults to 1 if not loaded)
-  const exchangeRate = liveRates[config.currency] || 1;
-  
-  // Step 4: Multiply the discounted USD total by the currency rate
-  const localAmount = suggestedPriceUSD * exchangeRate;
+    // Logic: Use hardcoded rate if exists (like NG), otherwise stay in USD symbol
+    const symbol = config.symbol || "$";
+    const localAmount = config.rate ? (suggestedPriceUSD * config.rate) : suggestedPriceUSD;
 
-  // Step 5: Automatically retrieve the official English country label mapping
-  const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
-  const countryName = regionNames.of(code) || code;
-
-  return {
-    suggestedPriceUSD: Number(suggestedPriceUSD.toFixed(2)),
-    localPriceFormatted: `${config.symbol}${Math.round(localAmount).toLocaleString()}`,
-    discountPercentage: Math.round((1 - multiplier) * 100),
-    discountTier: config.tier,
-    countryName: countryName
-  };
+    return {
+        suggestedPrice: Number(suggestedPriceUSD.toFixed(2)),
+        localPriceFormatted: `${symbol} ${Math.round(localAmount).toLocaleString()}`,
+        discountPercentage: Math.round((1 - multiplier) * 100),
+        discountTier: config.tier,
+        symbol: symbol,
+        countryName: countryName
+    };
+    
 };
