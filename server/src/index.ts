@@ -420,14 +420,10 @@ app.get('/api/widget', async (req: any, res: any) => {
         // If the country isn't in our list, we fallback to US settings (Rate: 1, Multiplier: 1)
         const config = pppData[countryCode] || { rate: 1, symbol: "$" };
         
+        const safeMultiplier = result.multiplier || 1; // Fallback to 1 if undefined
         const safeRate = config.rate || 1;             // Fallback to 1 if undefined
         const safeSymbol = config.symbol || "$";
         const safeCountryName = result.countryName || "International";
-        // Derive the multiplier from the public calculation result; the result
-        // type intentionally does not expose an internal multiplier field.
-        const safeMultiplier = originalPrice > 0
-            ? (result.suggestedPrice / originalPrice) / safeRate
-            : 1;
 
         res.setHeader('Content-Type', 'application/javascript');
         res.setHeader('Access-Control-Allow-Origin', '*');
