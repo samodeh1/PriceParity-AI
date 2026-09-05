@@ -158,8 +158,10 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
 
     // --- GLOBAL CHECKOUT FIX ---
     // Instead of checking the name 'Nigeria', we check the TIER 
-    // calculated by the engine for the current search
-    const tier = result?.discountTier; 
+    // calculated by the engine for the current search.
+    // The shared PricingResult type does not include this field yet, so
+    // we access it via a narrow cast instead of widening the app-wide type.
+    const tier = (result as any)?.discountTier as 'LOW' | 'MID' | 'HIGH' | 'NONE' | undefined;
 
     if (tier && tier !== 'NONE') {
         let code = "";
