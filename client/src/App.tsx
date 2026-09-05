@@ -114,61 +114,29 @@ function App() {
 //     window.location.href = finalUrl;
 // };
 
-// const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
-//     toast.loading(`Redirecting to secure ${type} checkout...`);
-
-//     const monthlyUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84";
-//     const annualUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/1b4152a4-5463-4208-9cd8-50a9f3ec7a89";
-
-//     const baseCheckoutUrl = type === 'annual' ? annualUrl : monthlyUrl;
-//     const userId = user?._id || user?.id;
-
-//     // Use URLSearchParams for professional URL building (Prevents "?" vs "&" bugs)
-//     const url = new URL(baseCheckoutUrl);
-//     url.searchParams.set('checkout[custom][user_id]', userId);
-//     url.searchParams.set('checkout[email]', user?.email || '');
-
-//     const tier = (result as any)?.discountTier as 'LOW' | 'MID' | 'HIGH' | 'NONE' | undefined; 
-
-//     if (tier && tier !== 'NONE') {
-//         let code = "";
-        
-//         // MATCHING THE CODES FROM YOUR SCREENSHOT EXACTLY
-//         if (tier === "LOW")  code = "C4MZQWOA"; // 20% off code
-//         if (tier === "MID")  code = "MWNZM5NW"; // 50% off code
-//         if (tier === "HIGH") code = "G2MZKXNG"; // 70% off code (Nigeria)
-
-//         if (code) {
-//             url.searchParams.set('checkout[discount_code]', code);
-//         }
-//     }
-
-//     window.location.href = url.toString();
-// };
-
 const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
+    toast.loading(`Redirecting to secure ${type} checkout...`);
+
     const monthlyUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84";
     const annualUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/1b4152a4-5463-4208-9cd8-50a9f3ec7a89";
 
     const baseCheckoutUrl = type === 'annual' ? annualUrl : monthlyUrl;
+    const userId = user?._id || user?.id;
+
+    // Use URLSearchParams for professional URL building (Prevents "?" vs "&" bugs)
     const url = new URL(baseCheckoutUrl);
-    
-    url.searchParams.set('checkout[custom][user_id]', user?._id || user?.id);
+    url.searchParams.set('checkout[custom][user_id]', userId);
     url.searchParams.set('checkout[email]', user?.email || '');
 
-    // --- GLOBAL CHECKOUT FIX ---
-    // Instead of checking the name 'Nigeria', we check the TIER 
-    // calculated by the engine for the current search.
-    // The shared PricingResult type does not include this field yet, so
-    // we access it via a narrow cast instead of widening the app-wide type.
-    const tier = (result as any)?.discountTier as 'LOW' | 'MID' | 'HIGH' | 'NONE' | undefined;
+    const tier = (result as any)?.discountTier as 'LOW' | 'MID' | 'HIGH' | 'NONE' | undefined; 
 
     if (tier && tier !== 'NONE') {
         let code = "";
-        // Match the Tier to your ACTUAL Lemon Squeezy alphanumeric codes
-        if (tier === "LOW")  code = "C4MZQWOA"; // 20% off
-        if (tier === "MID")  code = "MWNZM5NW"; // 50% off
-        if (tier === "HIGH") code = "G2MZKXNG"; // 70% off
+        
+        // MATCHING THE CODES FROM YOUR SCREENSHOT EXACTLY
+        if (tier === "LOW")  code = "C4MZQWOA"; // 20% off code
+        if (tier === "MID")  code = "MWNZM5NW"; // 50% off code
+        if (tier === "HIGH") code = "G2MZKXNG"; // 70% off code (Nigeria)
 
         if (code) {
             url.searchParams.set('checkout[discount_code]', code);
@@ -177,6 +145,8 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
 
     window.location.href = url.toString();
 };
+
+
 
   const handleImplement = () => {
     if (!user?.isPro) {
