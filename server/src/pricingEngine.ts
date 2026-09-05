@@ -1,13 +1,13 @@
 // server/src/pricingEngine.ts
 
-interface CountryData {
+interface PPPDataEntry {
     tier: 'LOW' | 'MID' | 'HIGH' | 'NONE';
     currency: string;
     rate?: number; // Optional: used for specific overrides like Nigeria
     symbol?: string;
 }
 
-export const pppData: Record<string, CountryData> = {
+export const pppData: Record<string, PPPDataEntry> = {
   "AD": { tier: "NONE", currency: "EUR", symbol: "€", rate: 0.86 },
   "AE": { tier: "NONE", currency: "AED", symbol: "د.إ", rate: 3.67 },
   "AF": { tier: "HIGH", currency: "AFN", symbol: "؋", rate: 65.5 },

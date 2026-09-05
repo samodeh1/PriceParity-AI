@@ -331,81 +331,139 @@ app.get('/api/countries', (req, res) => res.json(getCountryList()));
 //     } catch (e) { res.status(500).send(""); }
 // });
 
+// app.get('/api/widget', async (req: any, res: any) => {
+//   try {
+//     const originalPrice = Number(req.query.price) || 12;
+//     const clientIp = requestIp.getClientIp(req) || "";
+//     const geo = geoip.lookup(clientIp);
+
+//     // 1. Prioritize the query param, then the IP lookup
+//     let countryCode = (req.query.test_country as string)?.toUpperCase() || (geo ? geo.country : "US");
+    
+//     const result = calculatePPPPrice(originalPrice, countryCode) || {} as any;
+
+//     const tierMultipliers: Record<string, number> = {
+//       NONE: 1,
+//       LOW: 0.8,
+//       MID: 0.5,
+//       HIGH: 0.3
+//     };
+//     const pppMultiplier = tierMultipliers[(result.discountTier as string) || "MID"] ?? 0.4;
+
+//     const countryConfig = pppData[countryCode];
+//     const currentRate = countryConfig && typeof countryConfig.rate === 'number' ? countryConfig.rate : 1;
+    
+//     const symbol = result.symbol || "$";
+//     const countryName = result.countryName || "your country";
+
+//     res.setHeader('Content-Type', 'application/javascript');
+//     res.setHeader('Access-Control-Allow-Origin', '*');
+//     res.send(`
+//       (function() {
+//         // --- SENIOR TEST LOGIC ---
+//         const urlParams = new URLSearchParams(window.location.search);
+//         const urlTestCountry = urlParams.get('test_country');
+//         const currentScriptUrl = new URL(document.currentScript.src);
+
+//         if (urlTestCountry && !currentScriptUrl.searchParams.get('test_country')) {
+//           const newScript = document.createElement('script');
+//           newScript.src = currentScriptUrl.origin + currentScriptUrl.pathname + '?price=${originalPrice}&test_country=' + urlTestCountry;
+//           document.body.appendChild(newScript);
+//           return;
+//         }
+
+//         function inject() {
+//           const targets = document.querySelectorAll('[data-pp-price]');
+//           targets.forEach(el => {
+//             if (el.getAttribute('data-pp-done') === 'true') return;
+            
+//             const p = parseFloat(el.getAttribute('data-pp-price'));
+//             // Safety check: if the DOM attribute itself isn't a valid number, skip it
+//             if (isNaN(p)) return;
+
+//             // Compute local value using the specific item's price 'p' instead of the global originalPrice
+//             const localValue = Math.round(p * ${pppMultiplier} * ${currentRate});
+            
+//             // If the calculation still fails for any reason, fall back gracefully
+//             if (isNaN(localValue)) return;
+
+//             const formatted = "${symbol} " + localValue.toLocaleString();
+//             const isSmall = (el.offsetWidth || el.parentElement.offsetWidth || 300) < 250;
+//             const message = isSmall ? ' Pay <b>' + formatted + '</b>' : ' Residents of ${countryName} pay only <b>' + formatted + '</b>';
+            
+//             el.innerHTML = message;
+//             el.style.cssText = "display: flex !important; width: 100% !important; flex-basis: 100% !important; margin-top: 8px !important; color: #2563eb !important; font-size: 11px !important; font-family: system-ui, sans-serif !important; border-top: 1px dashed rgba(37,99,235,0.2) !important; padding-top: 8px !important; line-height: 1.2 !important; white-space: normal !important;";
+//             el.setAttribute('data-pp-done', 'true');
+//           });
+//         }
+
+//         document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
+//         setInterval(inject, 1500);
+//       })();
+//     `);
+//   } catch (e) {
+//     res.status(500).send("");
+//   }
+// });
+
 app.get('/api/widget', async (req: any, res: any) => {
-  try {
-    const originalPrice = Number(req.query.price) || 12;
-    const clientIp = requestIp.getClientIp(req) || "";
-    const geo = geoip.lookup(clientIp);
+    try {
+        const originalPrice = Number(req.query.price) || 12;
+        const clientIp = requestIp.getClientIp(req) || "";
+        const geo = geoip.lookup(clientIp);
+        const countryCode = (req.query.test_country as string)?.toUpperCase() || (geo ? geo.country : "US");
 
-    // 1. Prioritize the query param, then the IP lookup
-    let countryCode = (req.query.test_country as string)?.toUpperCase() || (geo ? geo.country : "US");
-    
-    const result = calculatePPPPrice(originalPrice, countryCode) || {} as any;
+        // 1. Get the calculations
+        const result = calculatePPPPrice(originalPrice, countryCode);
 
-    const tierMultipliers: Record<string, number> = {
-      NONE: 1,
-      LOW: 0.8,
-      MID: 0.5,
-      HIGH: 0.3
-    };
-    const pppMultiplier = tierMultipliers[(result.discountTier as string) || "MID"] ?? 0.4;
+        // 2. SAFE DATA COLLECTION (This prevents NaN)
+        // If the country isn't in our list, we fallback to US settings (Rate: 1, Multiplier: 1)
+        const config = pppData[countryCode] || { rate: 1, symbol: "$" };
+        
+        const safeRate = config.rate || 1;             // Fallback to 1 if undefined
+        const safeSymbol = config.symbol || "$";
+        const safeCountryName = result.countryName || "International";
+        // Derive the multiplier from the public calculation result; the result
+        // type intentionally does not expose an internal multiplier field.
+        const safeMultiplier = originalPrice > 0
+            ? (result.suggestedPrice / originalPrice) / safeRate
+            : 1;
 
-    const countryConfig = pppData[countryCode];
-    const currentRate = countryConfig && typeof countryConfig.rate === 'number' ? countryConfig.rate : 1;
-    
-    const symbol = result.symbol || "$";
-    const countryName = result.countryName || "your country";
+        res.setHeader('Content-Type', 'application/javascript');
+        res.setHeader('Access-Control-Allow-Origin', '*');
 
-    res.setHeader('Content-Type', 'application/javascript');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.send(`
-      (function() {
-        // --- SENIOR TEST LOGIC ---
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlTestCountry = urlParams.get('test_country');
-        const currentScriptUrl = new URL(document.currentScript.src);
+        res.send(`
+            (function() {
+                function inject() {
+                    const targets = document.querySelectorAll('[data-pp-price]');
+                    targets.forEach(el => {
+                        if (el.getAttribute('data-pp-done') === 'true') return;
+                        
+                        const p = parseFloat(el.getAttribute('data-pp-price'));
+                        if (isNaN(p)) return;
 
-        if (urlTestCountry && !currentScriptUrl.searchParams.get('test_country')) {
-          const newScript = document.createElement('script');
-          newScript.src = currentScriptUrl.origin + currentScriptUrl.pathname + '?price=${originalPrice}&test_country=' + urlTestCountry;
-          document.body.appendChild(newScript);
-          return;
-        }
+                        // Calculation: Using the SAFE numbers provided by the server
+                        const localValue = Math.round(p * ${safeMultiplier} * ${safeRate});
+                        const formatted = "${safeSymbol} " + localValue.toLocaleString();
 
-        function inject() {
-          const targets = document.querySelectorAll('[data-pp-price]');
-          targets.forEach(el => {
-            if (el.getAttribute('data-pp-done') === 'true') return;
-            
-            const p = parseFloat(el.getAttribute('data-pp-price'));
-            // Safety check: if the DOM attribute itself isn't a valid number, skip it
-            if (isNaN(p)) return;
+                        const isSmall = (el.offsetWidth || el.parentElement.offsetWidth || 300) < 250;
+                        const message = isSmall ? ' ' + formatted : ' Residents of ${safeCountryName} pay only <b>' + formatted + '</b>';
 
-            // Compute local value using the specific item's price 'p' instead of the global originalPrice
-            const localValue = Math.round(p * ${pppMultiplier} * ${currentRate});
-            
-            // If the calculation still fails for any reason, fall back gracefully
-            if (isNaN(localValue)) return;
-
-            const formatted = "${symbol} " + localValue.toLocaleString();
-            const isSmall = (el.offsetWidth || el.parentElement.offsetWidth || 300) < 250;
-            const message = isSmall ? ' Pay <b>' + formatted + '</b>' : ' Residents of ${countryName} pay only <b>' + formatted + '</b>';
-            
-            el.innerHTML = message;
-            el.style.cssText = "display: flex !important; width: 100% !important; flex-basis: 100% !important; margin-top: 8px !important; color: #2563eb !important; font-size: 11px !important; font-family: system-ui, sans-serif !important; border-top: 1px dashed rgba(37,99,235,0.2) !important; padding-top: 8px !important; line-height: 1.2 !important; white-space: normal !important;";
-            el.setAttribute('data-pp-done', 'true');
-          });
-        }
-
-        document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
-        setInterval(inject, 1500);
-      })();
-    `);
-  } catch (e) {
-    res.status(500).send("");
-  }
+                        el.innerHTML = message;
+                        el.style.cssText = "display: inline-flex !important; align-items: center !important; gap: 8px !important; background: rgba(37, 99, 235, 0.05) !important; color: #2563eb !important; padding: 8px 16px !important; border-radius: 99px !important; font-size: 13px !important; font-weight: 700 !important; border: 1px solid rgba(37, 99, 235, 0.1) !important; margin-top: 8px !important; font-family: sans-serif !important; white-space: nowrap !important;";
+                        
+                        el.setAttribute('data-pp-done', 'true');
+                    });
+                }
+                document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
+                setInterval(inject, 1500); 
+            })();
+        `);
+    } catch (e) { 
+        console.error("Widget Logic Error:", e);
+        res.status(500).send(""); 
+    }
 });
-
 
 mongoose.connect(process.env.MONGO_URI as string)
     .then(() => console.log("PriceParity SaaS DB Connected"))
