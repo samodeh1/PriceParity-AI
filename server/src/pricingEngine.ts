@@ -240,70 +240,36 @@ export const getCountryList = () => {
 };
 
 
-// export const calculatePPPPrice = (originalPrice: number, countryCode: string) => {
-//     const code = countryCode.toUpperCase();
-//     const config = pppData[code] || { tier: "MID" }; // Default to 50% off for unlisted
-
-//     const tierMultipliers = {
-//         "NONE": 1.0,
-//         "LOW": 0.8,
-//         "MID": 0.5,
-//         "HIGH": 0.3
-//     };
-
-//     const multiplier = tierMultipliers[config.tier];
-//     const suggestedPriceUSD = originalPrice * multiplier;
-
-//     // Resolve Country Name and Currency Symbol automatically
-//     const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
-//     const countryName = regionNames.of(code) || code;
-
-//     // Logic: Use hardcoded rate if exists (like NG), otherwise stay in USD symbol
-//     const symbol = config.symbol || "$";
-//     const localAmount = config.rate ? (suggestedPriceUSD * config.rate) : suggestedPriceUSD;
-
-//     return {
-//         suggestedPrice: Number(suggestedPriceUSD.toFixed(2)),
-//         localPriceFormatted: `${symbol} ${Math.round(localAmount).toLocaleString()}`,
-//         discountPercentage: Math.round((1 - multiplier) * 100),
-//         discountTier: config.tier,
-//         symbol: symbol,
-//         countryName: countryName
-//     };
-    
-// };
-
-// server/src/pricingEngine.ts
-
 export const calculatePPPPrice = (originalPrice: number, countryCode: string) => {
     const code = countryCode.toUpperCase();
-    
-    // 1. Logic: Use the massive pppData list at the top of this file
-    // FALLBACK: If country not in list, we treat as 'International' (40% discount)
-    const country = pppData[code] || pppData["DEFAULT"];
-    
+    const config = pppData[code] || { tier: "MID" }; // Default to 50% off for unlisted
+
     const tierMultipliers = {
-        "NONE": 1.0, 
-        "LOW": 0.8,   // 20% off (GLOBAL20)
-        "MID": 0.5,   // 50% off (GLOBAL50)
-        "HIGH": 0.3   // 70% off (GLOBAL70)
+        "NONE": 1.0,
+        "LOW": 0.8,
+        "MID": 0.5,
+        "HIGH": 0.3
     };
 
-    const multiplier = tierMultipliers[country.tier] || 0.6;
+    const multiplier = tierMultipliers[config.tier];
     const suggestedPriceUSD = originalPrice * multiplier;
-    
-    // 2. Local Math: Using the specific Rate and Symbol from pppData
-    const localAmount = Math.round(suggestedPriceUSD * country.rate);
-    const formattedPrice = `${country.symbol} ${localAmount.toLocaleString()}`;
+
+    // Resolve Country Name and Currency Symbol automatically
+    const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
+    const countryName = regionNames.of(code) || code;
+
+    // Logic: Use hardcoded rate if exists (like NG), otherwise stay in USD symbol
+    const symbol = config.symbol || "$";
+    const localAmount = config.rate ? (suggestedPriceUSD * config.rate) : suggestedPriceUSD;
 
     return {
         suggestedPrice: Number(suggestedPriceUSD.toFixed(2)),
-        localPriceFormatted: formattedPrice,
+        localPriceFormatted: `${symbol} ${Math.round(localAmount).toLocaleString()}`,
         discountPercentage: Math.round((1 - multiplier) * 100),
-        discountTier: country.tier,
-        symbol: country.symbol,
-        countryName: country.name,
-        rate: country.rate
+        discountTier: config.tier,
+        symbol: symbol,
+        countryName: countryName
     };
+    
 };
 
