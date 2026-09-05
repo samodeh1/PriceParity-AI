@@ -82,29 +82,37 @@ function App() {
 
   // --- UPDATED: LEMON SQUEEZY UPGRADE ---
 const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
-    toast.loading(`Connecting to secure ${type} checkout...`);
+    toast.loading(`Redirecting to secure ${type} checkout...`);
 
-    // 1. YOUR REAL LIVE LINKS
     const monthlyUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84";
     const annualUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/1b4152a4-5463-4208-9cd8-50a9f3ec7a89";
 
-    // 2. Select the correct link based on the user's click
     const baseCheckoutUrl = type === 'annual' ? annualUrl : monthlyUrl;
-
-    // 3. Metadata Handshake: Pass User ID for the Webhook to find
     const userId = user?._id || user?.id;
+
+    // 1. Build the basic URL
     let finalUrl = `${baseCheckoutUrl}?checkout[custom][user_id]=${userId}&checkout[email]=${user?.email}`;
 
-    // 4. Automated Fair-Price Discount for Nigeria
-    // (This uses the code we verified earlier: KYMTA3MG)
-    const isNigeria = country === 'NG';
-    if (isNigeria) {
-      finalUrl += `&checkout[discount_code]=C4MZQWOA`; 
+    // 2. THE DYNAMIC TIER LOGIC
+    // The backend can return a discountTier value, but the shared PricingResult type
+    // does not currently include it, so we access it via a narrow cast instead of
+    // forcing a type-wide change in a single file fix.
+    const tier = (result as any)?.discountTier as 'LOW' | 'MID' | 'HIGH' | 'NONE' | undefined;
+
+    if (tier && tier !== 'NONE') {
+        let code = "";
+
+        if (tier === "LOW") code = "C4MZQWOA";
+        if (tier === "MID") code = "MWNZM5NW";
+        if (tier === "HIGH") code = "M4MTIZOQ";
+
+        if (code) {
+            finalUrl += `&checkout[discount_code]=${code}`;
+        }
     }
 
-    // 5. Open the real checkout
     window.location.href = finalUrl;
-  };
+};
 
   const handleImplement = () => {
     if (!user?.isPro) {
