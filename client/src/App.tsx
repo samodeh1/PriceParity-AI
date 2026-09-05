@@ -136,7 +136,7 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
         // MATCHING THE CODES FROM YOUR SCREENSHOT EXACTLY
         if (tier === "LOW")  code = "C4MZQWOA"; // 20% off code
         if (tier === "MID")  code = "MWNZM5NW"; // 50% off code
-        if (tier === "HIGH") code = "M4MTIZOQ"; // 70% off code (Nigeria)
+        if (tier === "HIGH") code = "G2MZKXNG"; // 70% off code (Nigeria)
 
         if (code) {
             url.searchParams.set('checkout[discount_code]', code);
