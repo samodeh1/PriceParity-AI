@@ -5,11 +5,9 @@ interface PPPDataEntry {
     currency: string;
     rate?: number; // Optional: used for specific overrides like Nigeria
     symbol?: string;
-    name?: string;
 }
 
 export const pppData: Record<string, PPPDataEntry> = {
-  "DEFAULT": { tier: "MID", currency: "USD", symbol: "$", rate: 1.0, name: "International" },
   "AD": { tier: "NONE", currency: "EUR", symbol: "€", rate: 0.86 },
   "AE": { tier: "NONE", currency: "AED", symbol: "د.إ", rate: 3.67 },
   "AF": { tier: "HIGH", currency: "AFN", symbol: "؋", rate: 65.5 },
@@ -295,7 +293,7 @@ export const calculatePPPPrice = (originalPrice: number, countryCode: string) =>
     const suggestedPriceUSD = originalPrice * multiplier;
     
     // 2. Local Math: Using the specific Rate and Symbol from pppData
-    const localAmount = Math.round(suggestedPriceUSD * (country.rate ?? 1));
+    const localAmount = Math.round(suggestedPriceUSD * country.rate);
     const formattedPrice = `${country.symbol} ${localAmount.toLocaleString()}`;
 
     return {
