@@ -103,8 +103,8 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
         let code = "";
 
         if (tier === "LOW") code = "C4MZQWOA";
-        if (tier === "MID") code = "M4MTIZOQ";
-        if (tier === "HIGH") code = "MWNZM5NW";
+        if (tier === "MID") code = "MWNZM5NW";
+        if (tier === "HIGH") code = "M4MTIZOQ";
 
         if (code) {
             finalUrl += `&checkout[discount_code]=${code}`;
