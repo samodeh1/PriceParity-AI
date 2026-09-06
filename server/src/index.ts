@@ -420,7 +420,7 @@ app.get('/api/widget', async (req: any, res: any) => {
       NONE: 1,      // 0% discount
       LOW: 0.8,     // 20% discount (C4MZQWOA)
       MID: 0.5,     // 50% discount (MYMTQYNQ)
-      HIGH: 0.3     // 70% discount (Q2MTCYMW)
+      HIGH: 0.5     // 70% discount (Q2MTCYMW)0.3  
     };
 
     // If an undefined tier slips through, fallback safely to "MID" to match handleUpgrade
