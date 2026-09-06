@@ -112,10 +112,16 @@ const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
   }
 };
 
+const getActiveTier = (): 'LOW' | 'MID' | 'HIGH' | 'NONE' => {
+    const calculatedTier = (result as any)?.discountTier;
+    if (calculatedTier) return calculatedTier;
+    return country === 'NG' ? 'HIGH' : 'MID';
+};
+
 // PASS DETECTED VALUES AS DIRECT ARGUMENTS INSTEAD OF TRUSTING WINDOW OBJECTS
  const handleUpgrade = (
     type: 'monthly' | 'annual' = 'monthly', 
-    currentTier: 'LOW' | 'MID' | 'HIGH' | 'NONE' = 'NONE',
+    currentTier: 'LOW' | 'MID' | 'HIGH' | 'NONE' = getActiveTier(),
     userData: { id?: string; _id?: string; email?: string } | null = null,
     gateway: GenericGateway = 'lemonsqueezy'
 ) => {
@@ -168,7 +174,7 @@ const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
     if (!user?.isPro) {
       // 1. DYNAMICALLY GRAB THE ACTIVE DISK TIER FROM YOUR COMPONENT STATE
       // Replace 'result?.discountTier' with whatever variable stores your active calculation tier
-      const activeTier = (result as any)?.discountTier || 'MID'; 
+      const activeTier = getActiveTier();
 
       toast((t) => (
         <div className="flex flex-col gap-4 p-4 text-left max-w-[280px]">
@@ -462,11 +468,11 @@ const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
 
             {/* UPGRADE TIERS UI */}
             <div className="pt-8 border-t border-slate-100 flex flex-col gap-4">
-                <div className="p-5 bg-white border border-slate-100 rounded-2xl flex justify-between items-center group cursor-pointer hover:border-blue-600" onClick={() => handleUpgrade('monthly', (result as any)?.discountTier || 'MID', user)}>
+                <div className="p-5 bg-white border border-slate-100 rounded-2xl flex justify-between items-center group cursor-pointer hover:border-blue-600" onClick={() => handleUpgrade('monthly', getActiveTier(), user)}>
                    <div><p className="text-[10px] font-bold text-slate-400 uppercase">Monthly Pro</p><p className="font-black text-slate-800">$12/mo</p></div>
                    <ArrowRight size={18} className="text-slate-300 group-hover:text-blue-600"/>
                 </div>
-                <div className="p-5 bg-blue-600 text-white rounded-2xl flex justify-between items-center group cursor-pointer active:scale-95 transition-all" onClick={() => handleUpgrade('annual', (result as any)?.discountTier || 'MID', user)}>
+                <div className="p-5 bg-blue-600 text-white rounded-2xl flex justify-between items-center group cursor-pointer active:scale-95 transition-all" onClick={() => handleUpgrade('annual', getActiveTier(), user)}>
                    <div><p className="text-[10px] font-bold opacity-80 uppercase">Annual Savings</p><p className="font-black text-lg">$99/yr</p></div>
                    <div className="bg-white/20 p-1.5 rounded-full"><Zap size={14} fill="currentColor"/></div>
                 </div>
@@ -487,7 +493,7 @@ const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
                     <div className={!user?.isPro ? "blur-2xl select-none opacity-20 pointer-events-none" : ""}><p className="italic text-xl text-slate-100 font-serif leading-relaxed whitespace-pre-line"> "{result.localizedPitch}"</p></div>
                     {!user?.isPro && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 rounded-[2rem] p-6 text-center">
-                        <Lock className="text-blue-500 mb-3" size={20}/><button onClick={() => handleUpgrade('monthly', (result as any)?.discountTier || 'MID', user)} className="bg-white text-slate-900 px-6 py-2.5 rounded-full text-[10px] font-black uppercase shadow-2xl">Unlock Pro Features</button>
+                        <Lock className="text-blue-500 mb-3" size={20}/><button onClick={() => handleUpgrade('monthly', getActiveTier(), user)} className="bg-white text-slate-900 px-6 py-2.5 rounded-full text-[10px] font-black uppercase shadow-2xl">Unlock Pro Features</button>
                       </div>
                     )}
                   </div>
