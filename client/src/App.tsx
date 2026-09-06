@@ -352,8 +352,8 @@ const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
         let code = "";
         
         if (currentTier === "LOW")  code = "C4MZQWOA";  // GLOBAL20
-        if (currentTier === "HIGH") code = "MYMTQYNQ";  // GLOBAL70
-        if (currentTier === "MID")  code = "MYMTQYNQ";  // GLOBAL50 Q2MTCYMW
+        if (currentTier === "HIGH") code = "Q2MTCYMW";  // GLOBAL70
+        if (currentTier === "MID")  code = "MYMTQYNQ";  // GLOBAL50 
 
         if (code && config.couponParam) {
             url.searchParams.set(config.couponParam, code);
