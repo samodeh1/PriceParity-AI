@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, BarChart3, Lock, ShieldCheck, Sparkles, Zap, LifeBuoy, Mail, MessageSquare } from 'lucide-react';
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast, { Toaster } from 'react-hot-toast';
 import { Auth } from "./components/Auth";
 import type { PricingResult } from "./types";
@@ -15,7 +15,7 @@ const SupportModal = ({ isOpen, onClose, onEmailClick }: { isOpen: boolean; onCl
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-200 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl relative border border-slate-100">
         <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 font-bold transition-colors">✕</button>
         <div className="text-center mb-8">
@@ -76,41 +76,101 @@ function App() {
       setUser((prev: any) => ({ ...prev, isPro: res.data.isPro }));
       toast.success("Strategy generated!");
       fetchHistory();
-    } catch (err: any) { toast.error("Generation failed"); } 
+    } catch { toast.error("Generation failed"); } 
     finally { setLoading(false); }
   };
 
   // --- UPDATED: LEMON SQUEEZY UPGRADE ---
+type GenericGateway = 'lemonsqueezy' | 'stripe' | 'paddle' | 'shopify' | 'gumroad' | 'paystack' | string;
+
+interface GatewayConfig {
+  couponParam: string;
+  emailParam: string;
+  userIdParam: string;
+}
+
+const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
+  lemonsqueezy: {
+    couponParam: 'checkout[discount_code]',
+    emailParam: 'checkout[email]',
+    userIdParam: 'checkout[custom][user_id]'
+  },
+  stripe: {
+    couponParam: 'prefilled_promo_code',
+    emailParam: 'prefilled_email',
+    userIdParam: 'client_reference_id'
+  },
+  paddle: {
+    couponParam: 'coupon',
+    emailParam: 'email',
+    userIdParam: 'passthrough'
+  },
+  default: {
+    couponParam: 'discount_code',
+    emailParam: 'email',
+    userIdParam: 'user_id'
+  }
+};
+
 // PASS DETECTED VALUES AS DIRECT ARGUMENTS INSTEAD OF TRUSTING WINDOW OBJECTS
- const handleUpgrade = async (
+ const handleUpgrade = (
     type: 'monthly' | 'annual' = 'monthly', 
-  userData: { id?: string; _id?: string; email?: string } | null = null
+    currentTier: 'LOW' | 'MID' | 'HIGH' | 'NONE' = 'NONE',
+    userData: { id?: string; _id?: string; email?: string } | null = null,
+    gateway: GenericGateway = 'lemonsqueezy'
 ) => {
     toast.loading(`Redirecting to secure ${type} checkout...`);
 
-  if (!token) {
-    setIsAuthOpen(true);
-    return;
-  }
+    // YOUR LOCKED PRODUCT BUY LINKS
+    const baseUrls = {
+        monthly: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84",
+        annual: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/1b4152a4-5463-4208-9cd8-50a9f3ec7a89"
+    };
 
-    try {
-      const response = await axios.post(`${API_BASE}/checkout`, {
-        type,
-        country,
-        email: userData?.email || user?.email || ''
-      }, { headers: { 'x-auth-token': token } });
-      window.location.href = response.data.url;
-    } catch (error) {
-      toast.error('Checkout could not be started. Please try again.');
+    // Forces selection of the explicit /buy/ link paths to avoid generic /checkout drops
+    const selectedUrl = type === 'annual' ? baseUrls.annual : baseUrls.monthly;
+    const url = new URL(selectedUrl);
+    const config = GATEWAY_REGISTRY[gateway] || GATEWAY_REGISTRY['default'];
+
+    // Extracting user details cleanly from safe component params
+    const rawUserId = userData?._id || userData?.id || ''; 
+    const rawEmail = userData?.email || '';
+
+    const userId = typeof rawUserId === 'string' ? rawUserId.replace(/[{}]/g, '').trim() : '';
+    const email = typeof rawEmail === 'string' ? rawEmail.replace(/[{}]/g, '').trim() : '';
+
+    if (config.userIdParam && userId && userId !== 'undefined' && userId !== 'null') {
+        url.searchParams.set(config.userIdParam, userId);
     }
+    if (config.emailParam && email && email.includes('@')) {
+        url.searchParams.set(config.emailParam, email);
+    }
+
+    // MAP DETECTED PPP TIER STRINGS TO DASHBOARD CONTEXT 
+    if (currentTier && currentTier !== 'NONE') {
+        let code = "";
+        
+        if (currentTier === "LOW")  code = "GLOBAL20";
+        if (currentTier === "HIGH") code = "GLOBAL70";
+        if (currentTier === "MID")  code = "GLOBAL50";
+
+        if (code && config.couponParam) {
+            url.searchParams.set(config.couponParam, code);
+        }
+    }
+
+    // Direct browser routing execution
+    window.location.href = url.toString();
 };
 
   const handleImplement = () => {
     if (!user?.isPro) {
       // 1. DYNAMICALLY GRAB THE ACTIVE DISK TIER FROM YOUR COMPONENT STATE
       // Replace 'result?.discountTier' with whatever variable stores your active calculation tier
+      const activeTier = (result as any)?.discountTier || 'MID'; 
+
       toast((t) => (
-        <div className="flex flex-col gap-4 p-4 text-left max-w-[280px]">
+        <div className="flex flex-col gap-4 p-4 text-left max-w-70">
           <div>
             <b className="text-slate-900 text-lg leading-none">Choose Your Plan</b>
             <p className="text-[11px] text-slate-400 mt-1 uppercase font-bold tracking-widest">Unlock AI & Widget Access</p>
@@ -120,7 +180,7 @@ function App() {
             <button 
               onClick={() => { 
                 toast.dismiss(t.id); 
-                handleUpgrade('monthly', user); 
+                handleUpgrade('monthly', activeTier, user); 
               }} 
               className="w-full flex items-center justify-between p-3 bg-white border border-slate-200 rounded-2xl hover:border-blue-600 transition-all group"
             >
@@ -135,7 +195,7 @@ function App() {
             <button 
               onClick={() => { 
                 toast.dismiss(t.id); 
-                handleUpgrade('annual', user); 
+                handleUpgrade('annual', activeTier, user); 
               }} 
               className="w-full flex items-center justify-between p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200 active:scale-95 transition-all group"
             >
@@ -162,13 +222,13 @@ function App() {
     finally { setAuthLoading(false); }
   };
 
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     if (!token) return;
     try {
       const res = await axios.get(`${API_BASE}/strategies`, { headers: { 'x-auth-token': token } });
       setHistory(res.data);
-    } catch (err) { console.error(err); }
-  };
+    } catch { console.error("Error loading strategy history"); }
+  }, [token]);
 
   const handleEmailClick = (e: React.MouseEvent) => {
     e.preventDefault(); 
@@ -197,7 +257,7 @@ function App() {
         try {
             const res = await axios.get(`${API_BASE}/countries`);
             setAvailableCountries(res.data);
-        } catch (err) { console.error("Error loading countries"); }
+        } catch { console.error("Error loading countries"); }
     };
     fetchCountries();
   }, []);
@@ -214,7 +274,7 @@ function App() {
           if (token) await syncProfile(token);
           toast.dismiss(load);
           toast.success("Subscription Active! Welcome to Pro.");
-        } catch (err) { 
+        } catch { 
           toast.dismiss(load); 
         }
       };
@@ -226,7 +286,7 @@ function App() {
   useEffect(() => {
     if (token) { syncProfile(token); fetchHistory(); } 
     else { setAuthLoading(false); }
-  }, [token]);
+  }, [token, fetchHistory]);
 
   useEffect(() => {
     if (!token) return;
@@ -287,7 +347,7 @@ function App() {
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
           
           {/* FLEX CONTAINER: Moves both badges to one line */}
-          <div className="mb-6 flex justify-center items-center min-h-[44px] w-full overflow-visible">
+          <div className="mb-6 flex justify-center items-center min-h-11 w-full overflow-visible">
             
             {/* 1. LOCAL OFFER BADGE (Self-filling Widget) */}
             
@@ -306,7 +366,7 @@ function App() {
             One price does not <br /> <span className="text-blue-600">fit the world.</span>
           </h1>
             <p className="text-slate-500 text-xl md:text-2xl mb-12 max-w-2xl mx-auto leading-relaxed">AI optimization for local economies in 20+ countries.</p>
-            <button onClick={() => setIsAuthOpen(true)} className="group bg-blue-600 text-white px-10 py-6 rounded-[2rem] font-black text-xl hover:bg-blue-700 shadow-2xl transition-all active:scale-95 flex items-center gap-3 mx-auto">Get Started Free <ArrowRight /></button>
+            <button onClick={() => setIsAuthOpen(true)} className="group bg-blue-600 text-white px-10 py-6 rounded-4xl font-black text-xl hover:bg-blue-700 shadow-2xl transition-all active:scale-95 flex items-center gap-3 mx-auto">Get Started Free <ArrowRight /></button>
             <p className="mt-10 text-slate-400 text-xs font-bold uppercase tracking-[0.2em]">Trusted by Digital Creators Worldwide</p>
           </motion.div>
         </section>
@@ -331,8 +391,8 @@ function App() {
 
         <section className="max-w-6xl mx-auto px-6 pt-10 pb-16 text-center">
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-            <div id="price-parity-display" className="mb-6 min-h-[40px] flex justify-center items-center"></div>
-            <button onClick={() => setIsAuthOpen(true)} className="group bg-blue-600 text-white px-10 py-6 rounded-[2rem] font-black text-xl hover:bg-blue-700 shadow-2xl transition-all active:scale-95 flex items-center gap-3 mx-auto">Get Started Free <ArrowRight /></button>
+            <div id="price-parity-display" className="mb-6 min-h-10 flex justify-center items-center"></div>
+            <button onClick={() => setIsAuthOpen(true)} className="group bg-blue-600 text-white px-10 py-6 rounded-4xl font-black text-xl hover:bg-blue-700 shadow-2xl transition-all active:scale-95 flex items-center gap-3 mx-auto">Get Started Free <ArrowRight /></button>
           </motion.div>
         </section>
 
@@ -401,11 +461,11 @@ function App() {
 
             {/* UPGRADE TIERS UI */}
             <div className="pt-8 border-t border-slate-100 flex flex-col gap-4">
-                <div className="p-5 bg-white border border-slate-100 rounded-2xl flex justify-between items-center group cursor-pointer hover:border-blue-600" onClick={() => handleUpgrade('monthly', user)}>
+                <div className="p-5 bg-white border border-slate-100 rounded-2xl flex justify-between items-center group cursor-pointer hover:border-blue-600" onClick={() => handleUpgrade('monthly')}>
                    <div><p className="text-[10px] font-bold text-slate-400 uppercase">Monthly Pro</p><p className="font-black text-slate-800">$12/mo</p></div>
                    <ArrowRight size={18} className="text-slate-300 group-hover:text-blue-600"/>
                 </div>
-                <div className="p-5 bg-blue-600 text-white rounded-2xl flex justify-between items-center group cursor-pointer active:scale-95 transition-all" onClick={() => handleUpgrade('annual', user)}>
+                <div className="p-5 bg-blue-600 text-white rounded-2xl flex justify-between items-center group cursor-pointer active:scale-95 transition-all" onClick={() => handleUpgrade('annual')}>
                    <div><p className="text-[10px] font-bold opacity-80 uppercase">Annual Savings</p><p className="font-black text-lg">$99/yr</p></div>
                    <div className="bg-white/20 p-1.5 rounded-full"><Zap size={14} fill="currentColor"/></div>
                 </div>
@@ -415,22 +475,22 @@ function App() {
           <div className="lg:col-span-3">
             <AnimatePresence mode="wait">
               {!result ? (
-                <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[3rem] p-12 text-center text-slate-300 min-h-[450px]"><BarChart3 size={48} className="opacity-10 mb-4"/><p className="font-bold">Enter details to see localized strategy.</p></div>
+                <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[3rem] p-12 text-center text-slate-300 min-h-112.5"><BarChart3 size={48} className="opacity-10 mb-4"/><p className="font-bold">Enter details to see localized strategy.</p></div>
               ) : (
                 <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-slate-900 text-white p-10 rounded-[3rem] shadow-2xl relative overflow-hidden">
                   <div className="flex items-center gap-2 text-blue-400 mb-8 font-black text-xs tracking-widest uppercase"><Sparkles size={16} /> Logic Applied</div>
                   <h3 className="text-6xl font-black mb-4 leading-none tracking-tighter text-white">{result.localPriceFormatted || `$${result.suggestedPrice}`}</h3>
                   <p className="text-slate-400 uppercase font-black mb-10 text-sm tracking-widest underline decoration-blue-600 decoration-4 underline-offset-8">Fair Price for {result.countryName || country}</p>
-                  <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 relative">
+                  <div className="bg-white/5 p-6 rounded-4xl border border-white/10 relative">
                     <p className="text-blue-400 text-[10px] font-black uppercase mb-3 tracking-widest flex items-center gap-2"><Sparkles size={12}/> AI Marketing Pitch</p>
                     <div className={!user?.isPro ? "blur-2xl select-none opacity-20 pointer-events-none" : ""}><p className="italic text-xl text-slate-100 font-serif leading-relaxed whitespace-pre-line"> "{result.localizedPitch}"</p></div>
                     {!user?.isPro && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 rounded-[2rem] p-6 text-center">
-                        <Lock className="text-blue-500 mb-3" size={20}/><button onClick={() => handleUpgrade('monthly', user)} className="bg-white text-slate-900 px-6 py-2.5 rounded-full text-[10px] font-black uppercase shadow-2xl">Unlock Pro Features</button>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 rounded-4xl p-6 text-center">
+                        <Lock className="text-blue-500 mb-3" size={20}/><button onClick={() => handleUpgrade('monthly')} className="bg-white text-slate-900 px-6 py-2.5 rounded-full text-[10px] font-black uppercase shadow-2xl">Unlock Pro Features</button>
                       </div>
                     )}
                   </div>
-                  <button onClick={handleImplement} className="w-full bg-white text-slate-900 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-lg hover:bg-slate-100 active:scale-95 transition-all mt-4">Get Code Widget</button>
+                  <button onClick={handleImplement} className="w-full bg-white text-slate-900 py-5 rounded-3xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-slate-100 active:scale-95 transition-all mt-4">Get Code Widget</button>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -469,7 +529,7 @@ function App() {
                 <div className="space-y-3">
                   <span className="text-blue-600 font-black text-sm">STEP 01</span>
                   <h5 className="font-bold text-slate-700 leading-tight">Create 3 Codes</h5>
-                  <p className="text-xs text-slate-400 leading-relaxed">Use the exact discount codes configured in your Checkout Dashboard: <code className="text-blue-600 font-bold">C4MZQWOA</code> (20% off), <code className="text-blue-600 font-bold">MYMTQYNQ</code> (50% off), and <code className="text-blue-600 font-bold">Q2MTCYMW</code> (70% off).</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">Go to your Checkout Dashboard and create these 3 discount codes: <code className="text-blue-600 font-bold">GLOBAL20</code> (20% off), <code className="text-blue-600 font-bold">GLOBAL50</code> (50% off), and <code className="text-blue-600 font-bold">GLOBAL70</code> (70% off).</p>
                 </div>
 
                 {/* Step 2 */}
@@ -512,7 +572,7 @@ function App() {
              <h3 className="text-2xl font-black text-slate-800 mb-10 tracking-tight">Recent Optimizations</h3>
              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {history.slice(0, 6).map((h) => (
-                <div key={h._id} className="bg-white p-7 rounded-[2rem] border border-white shadow-xl shadow-slate-100 text-left">
+                <div key={h._id} className="bg-white p-7 rounded-4xl border border-white shadow-xl shadow-slate-100 text-left">
                   <div className="flex justify-between mb-4"><h4 className="font-bold text-slate-800 line-clamp-1">{h.productName}</h4><span className="text-blue-600 font-black tracking-tighter text-sm">${h.suggestedPrice}</span></div>
                   <p className="text-[10px] font-black uppercase text-slate-400 mb-2 tracking-wider">{h.country}</p>
                   <p className="text-xs text-slate-400 italic line-clamp-2 leading-relaxed">"{h.pitch}"</p>
@@ -525,7 +585,7 @@ function App() {
 
       <footer className="py-12 text-center border-t border-slate-200 bg-white">
         <div className="flex justify-center gap-8 mb-6">
-           <button onClick={() => setIsHelpOpen(true)} className="flex items-center gap-2 text-[10px] font-black text-slate-400 hover:text-blue-600 transition-all uppercase tracking-widest tracking-widest"><LifeBuoy size={14} /> Help Center</button>
+           <button onClick={() => setIsHelpOpen(true)} className="flex items-center gap-2 text-[10px] font-black text-slate-400 hover:text-blue-600 transition-all uppercase tracking-widest"><LifeBuoy size={14} /> Help Center</button>
            <a href="mailto:support@priceparityai.com" onClick={handleEmailClick} className="flex items-center gap-2 text-[10px] font-black text-slate-400 hover:text-blue-600 transition-all uppercase tracking-widest"><Mail size={14} /> Contact Author</a>
         </div>
         <p className="text-slate-300 text-[10px] font-black uppercase tracking-[0.4em]">© 2026 PriceParity AI | Built By Samuel Odeh | <a href="https://www.richtec.com.ng" className="underline">RichTec</a></p>

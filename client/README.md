@@ -9,12 +9,12 @@ Styling: Tailwind CSS (Luxury/Minimalist UI)
 Backend: Node.js & Express (RESTful Architecture)
 Database: MongoDB Atlas (Cloud NoSQL)
 AI Integration: OpenAI API (GPT-4o-mini / Luna)
-FinTech: Lemon Squeezy (Secure Payments)
+FinTech: Paystack Global (Secure Payments)
 Auth: Google OAuth 2.0 & JWT-based sessions
 🌟 Key Business Features
 Dynamic PPP Engine: Automatically calculates suggested prices for 20+ countries (Nigeria, India, Brazil, etc.) based on local economic strength.
 Generative AI Localization: Uses OpenAI to rewrite sales pitches specifically for the target market's culture and currency (e.g., automatically converting $USD to ₦Naira).
-Pro-Tier Monetization: Integrated a "Pay-to-Unlock" model. Users must upgrade to Pro via Lemon Squeezy to access the AI engine and the Website Widget.
+Pro-Tier Monetization: Integrated a "Pay-to-Unlock" model. Users must upgrade to Pro via Paystack to access the AI engine and the Website Widget.
 Security-First Architecture:
 Idle Session Management: Auto-logs users out after 15 minutes of inactivity for data protection.
 Environment Shielding: Securely handles sensitive API keys via Render and Vercel environments.
@@ -40,7 +40,7 @@ cd client && npm install
 cd ../server && npm install
 Environment Variables (.env):
 Create a .env in the /server folder with:
-MONGO_URI, JWT_SECRET, OPENAI_API_KEY, LEMON_SQUEEZY_API_KEY, LEMON_SQUEEZY_WEBHOOK_SECRET, LEMON_SQUEEZY_STORE_ID
+MONGO_URI, JWT_SECRET, OPENAI_API_KEY, LEMONSQUEEZY_SECRET_KEY, CLIENT_URL
 Run Dev Mode:
 code
 Bash

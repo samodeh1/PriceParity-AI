@@ -10,8 +10,6 @@ interface AuthProps {
 }
 
 export const Auth = ({ isOpen, onClose, onLogin }: AuthProps) => {
-    if (!isOpen) return null;
-    
     const API_URL = "https://priceparity-api-live.onrender.com/api/auth";
     const googleLogin = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
@@ -24,7 +22,7 @@ export const Auth = ({ isOpen, onClose, onLogin }: AuthProps) => {
                 onLogin(res.data.token, res.data.user);
                 toast.dismiss(loading);
                 toast.success("Welcome to the global market!");
-            } catch (err) {
+            } catch {
                 toast.dismiss(loading);
                 toast.error("Google Authentication failed");
             }
@@ -33,8 +31,10 @@ export const Auth = ({ isOpen, onClose, onLogin }: AuthProps) => {
        
     });
 
+    if (!isOpen) return null;
+
     return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-200 flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl relative border border-slate-100">
                 <button onClick={onClose} className="absolute top-6 right-6 p-2 hover:bg-slate-50 rounded-full transition">
                     <X size={20}/>
