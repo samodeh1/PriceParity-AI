@@ -379,8 +379,8 @@ interface UpgradePayload {
     const loadingToast = toast.loading(`Initializing secure ${type} checkout session...`);
 
     // 1. Assign your exact Lemon Squeezy product Variant IDs
-    const MONTHLY_VARIANT_ID = "83fc7d29-ff6e-48ad-aff5-818427365c84";
-    const ANNUAL_VARIANT_ID = "1b4152a4-5463-4208-9cd8-50a9f3ec7a89";
+    const MONTHLY_VARIANT_ID = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84";
+    const ANNUAL_VARIANT_ID = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/1b4152a4-5463-4208-9cd8-50a9f3ec7a89";
     
     const targetVariantId = type === 'annual' ? ANNUAL_VARIANT_ID : MONTHLY_VARIANT_ID;
 
