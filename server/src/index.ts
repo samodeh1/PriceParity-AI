@@ -331,24 +331,101 @@ app.get('/api/countries', (req, res) => res.json(getCountryList()));
 //     } catch (e) { res.status(500).send(""); }
 // });
 
+// app.get('/api/widget', async (req: any, res: any) => {
+//   try {
+//     const originalPrice = Number(req.query.price) || 12;
+//     const clientIp = requestIp.getClientIp(req) || "";
+//     const geo = geoip.lookup(clientIp);
+
+//     // 1. Prioritize the query param, then the IP lookup
+//     let countryCode = (req.query.test_country as string)?.toUpperCase() || (geo ? geo.country : "US");
+    
+//     const result = calculatePPPPrice(originalPrice, countryCode) || {} as any;
+
+//     const tierMultipliers: Record<string, number> = {
+//       NONE: 1,
+//       LOW: 0.8,
+//       MID: 0.5,
+//       HIGH: 0.3
+//     };
+//     const pppMultiplier = tierMultipliers[(result.discountTier as string) || "MID"] ?? 0.4;
+
+//     const countryConfig = pppData[countryCode];
+//     const currentRate = countryConfig && typeof countryConfig.rate === 'number' ? countryConfig.rate : 1;
+    
+//     const symbol = result.symbol || "$";
+//     const countryName = result.countryName || "your country";
+
+//     res.setHeader('Content-Type', 'application/javascript');
+//     res.setHeader('Access-Control-Allow-Origin', '*');
+//     res.send(`
+//       (function() {
+//         // --- SENIOR TEST LOGIC ---
+//         const urlParams = new URLSearchParams(window.location.search);
+//         const urlTestCountry = urlParams.get('test_country');
+//         const currentScriptUrl = new URL(document.currentScript.src);
+
+//         if (urlTestCountry && !currentScriptUrl.searchParams.get('test_country')) {
+//           const newScript = document.createElement('script');
+//           newScript.src = currentScriptUrl.origin + currentScriptUrl.pathname + '?price=${originalPrice}&test_country=' + urlTestCountry;
+//           document.body.appendChild(newScript);
+//           return;
+//         }
+
+//         function inject() {
+//           const targets = document.querySelectorAll('[data-pp-price]');
+//           targets.forEach(el => {
+//             if (el.getAttribute('data-pp-done') === 'true') return;
+            
+//             const p = parseFloat(el.getAttribute('data-pp-price'));
+//             // Safety check: if the DOM attribute itself isn't a valid number, skip it
+//             if (isNaN(p)) return;
+
+//             // Compute local value using the specific item's price 'p' instead of the global originalPrice
+//             const localValue = Math.round(p * ${pppMultiplier} * ${currentRate});
+            
+//             // If the calculation still fails for any reason, fall back gracefully
+//             if (isNaN(localValue)) return;
+
+//             const formatted = "${symbol} " + localValue.toLocaleString();
+//             const isSmall = (el.offsetWidth || el.parentElement.offsetWidth || 300) < 250;
+//             const message = isSmall ? ' Pay <b>' + formatted + '</b>' : ' Residents of ${countryName} pay only <b>' + formatted + '</b>';
+            
+//             el.innerHTML = message;
+//             el.style.cssText = "display: flex !important; width: 100% !important; flex-basis: 100% !important; margin-top: 8px !important; color: #2563eb !important; font-size: 11px !important; font-family: system-ui, sans-serif !important; border-top: 1px dashed rgba(37,99,235,0.2) !important; padding-top: 8px !important; line-height: 1.2 !important; white-space: normal !important;";
+//             el.setAttribute('data-pp-done', 'true');
+//           });
+//         }
+
+//         document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
+//         setInterval(inject, 1500);
+//       })();
+//     `);
+//   } catch (e) {
+//     res.status(500).send("");
+//   }
+// });
+
 app.get('/api/widget', async (req: any, res: any) => {
   try {
     const originalPrice = Number(req.query.price) || 12;
     const clientIp = requestIp.getClientIp(req) || "";
     const geo = geoip.lookup(clientIp);
 
-    // 1. Prioritize the query param, then the IP lookup
     let countryCode = (req.query.test_country as string)?.toUpperCase() || (geo ? geo.country : "US");
-    
     const result = calculatePPPPrice(originalPrice, countryCode) || {} as any;
 
+    // Explicit tier definitions mapping exactly to your checkout discounts
     const tierMultipliers: Record<string, number> = {
-      NONE: 1,
-      LOW: 0.8,
-      MID: 0.5,
-      HIGH: 0.3
+      NONE: 1,      // 0% discount
+      LOW: 0.8,     // 20% discount (C4MZQWOA)
+      MID: 0.5,     // 50% discount (MWNZM5NW)
+      HIGH: 0.3     // 70% discount (G2MZKXNG)
     };
-    const pppMultiplier = tierMultipliers[(result.discountTier as string) || "MID"] ?? 0.4;
+
+    // If an undefined tier slips through, fallback safely to "MID" to match handleUpgrade
+    const verifiedTier = (result.discountTier as string) || "MID";
+    const pppMultiplier = tierMultipliers[verifiedTier] ?? 0.5;
 
     const countryConfig = pppData[countryCode];
     const currentRate = countryConfig && typeof countryConfig.rate === 'number' ? countryConfig.rate : 1;
@@ -360,7 +437,6 @@ app.get('/api/widget', async (req: any, res: any) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.send(`
       (function() {
-        // --- SENIOR TEST LOGIC ---
         const urlParams = new URLSearchParams(window.location.search);
         const urlTestCountry = urlParams.get('test_country');
         const currentScriptUrl = new URL(document.currentScript.src);
@@ -378,13 +454,9 @@ app.get('/api/widget', async (req: any, res: any) => {
             if (el.getAttribute('data-pp-done') === 'true') return;
             
             const p = parseFloat(el.getAttribute('data-pp-price'));
-            // Safety check: if the DOM attribute itself isn't a valid number, skip it
             if (isNaN(p)) return;
 
-            // Compute local value using the specific item's price 'p' instead of the global originalPrice
             const localValue = Math.round(p * ${pppMultiplier} * ${currentRate});
-            
-            // If the calculation still fails for any reason, fall back gracefully
             if (isNaN(localValue)) return;
 
             const formatted = "${symbol} " + localValue.toLocaleString();
@@ -405,6 +477,7 @@ app.get('/api/widget', async (req: any, res: any) => {
     res.status(500).send("");
   }
 });
+
 
 // app.get('/api/widget', async (req: any, res: any) => {
 //     try {
