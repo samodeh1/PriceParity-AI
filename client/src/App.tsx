@@ -365,7 +365,7 @@ function App() {
 // };
 
 
-interface handleUpgrade {
+interface UpgradePayload {
   variantId: string;
   email: string;
   discountTier: 'LOW' | 'MID' | 'HIGH' | 'NONE';
