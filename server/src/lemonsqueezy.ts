@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const LEMON_SQUEEZY_URL = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84";
+const LEMON_SQUEEZY_URL = "https://api.lemonsqueezy.com/v1/checkouts";
 // Ensure you have added LEMON_SQUEEZY_API_KEY to your Render Environment Variables
 const API_KEY = process.env.LEMON_SQUEEZY_API_KEY;
 
