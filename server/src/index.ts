@@ -196,7 +196,7 @@ app.get('/api/widget', async (req: any, res: any) => {
 // --- NEW CHECKOUT ROUTE INTEGRATED FLUIDLY HERE ---
 app.post('/api/checkout', protect, async (req: any, res: any) => {
     try {
-        const { variantId, email, discountTier } = req.body;
+        const { type, country, email } = req.body;
         // Accessing the verified user ID from your protect authentication middleware context safely
         const userId = req.user?.id; 
 
@@ -204,16 +204,22 @@ app.post('/api/checkout', protect, async (req: any, res: any) => {
             return res.status(401).json({ error: "User authentication identification failed." });
         }
 
-        // Map frontend user geo tiers cleanly into the active Lemon Squeezy dashboard configurations
+        const variantId = type === "annual"
+            ? "1b4152a4-5463-4208-9cd8-50a9f3ec7a89"
+            : "83fc7d29-ff6e-48ad-aff5-818427365c84";
+        const clientIp = requestIp.getClientIp(req) || "";
+        const detectedCountry = geoip.lookup(clientIp)?.country;
+        const countryCode = detectedCountry || String(country || "US").toUpperCase();
+        const tier = calculatePPPPrice(1, countryCode).discountTier;
         let appliedCode = "";
-        if (discountTier === "LOW")  appliedCode = "C4MZQWOA";
-        if (discountTier === "MID")  appliedCode = "MYMTQYNQ";
-        if (discountTier === "HIGH") appliedCode = "Q2MTCYMW";
+        if (tier === "LOW") appliedCode = "C4MZQWOA";
+        if (tier === "MID") appliedCode = "MYMTQYNQ";
+        if (tier === "HIGH") appliedCode = "Q2MTCYMW";
 
         const checkoutUrl = await createLemonSqueezyCheckout(
             process.env.LEMON_SQUEEZY_STORE_ID || "",
             variantId,
-            email,
+            email || req.user?.email || "",
             userId,
             appliedCode // Forward the mapped coupon string directly to the API generator
         );
