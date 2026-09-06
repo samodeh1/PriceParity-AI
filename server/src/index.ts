@@ -206,9 +206,9 @@ app.post('/api/checkout', protect, async (req: any, res: any) => {
 
         // Map frontend user geo tiers cleanly into the active Lemon Squeezy dashboard configurations
         let appliedCode = "";
-        if (discountTier === "LOW")  appliedCode = "GLOBAL20";
-        if (discountTier === "MID")  appliedCode = "GLOBAL50";
-        if (discountTier === "HIGH") appliedCode = "GLOBAL70";
+        if (discountTier === "LOW")  appliedCode = "C4MZQWOA";
+        if (discountTier === "MID")  appliedCode = "MYMTQYNQ";
+        if (discountTier === "HIGH") appliedCode = "Q2MTCYMW";
 
         const checkoutUrl = await createLemonSqueezyCheckout(
             process.env.LEMON_SQUEEZY_STORE_ID || "",
