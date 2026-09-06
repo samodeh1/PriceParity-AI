@@ -146,41 +146,135 @@ function App() {
 //     window.location.href = url.toString();
 // };
 
-const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly', currentTier?: 'LOW' | 'MID' | 'HIGH' | 'NONE') => {
+// 1. Define support for any generic string gateway name
+type GenericGateway = 'lemonsqueezy' | 'stripe' | 'paddle' | 'shopify' | 'razorpay' | 'gumroad' | 'paystack' | string;
+
+interface GatewayConfig {
+  couponParam: string;       // The query parameter key for discounts
+  emailParam: string;        // The query parameter key for customer emails
+  userIdParam: string;       // The query parameter key for metadata tracking
+  customUrlHandler?: (url: URL, code: string, userId: string, email: string) => void; // For weirdly formatted structures
+}
+
+// 2. The Master Dictionary mapping every checkout parameter name in existence
+const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
+  lemonsqueezy: {
+    couponParam: 'checkout[discount_code]',
+    emailParam: 'checkout[email]',
+    userIdParam: 'checkout[custom][user_id]'
+  },
+  stripe: {
+    couponParam: 'prefilled_promo_code',
+    emailParam: 'prefilled_email',
+    userIdParam: 'client_reference_id'
+  },
+  paddle: {
+    couponParam: 'coupon',
+    emailParam: 'email',
+    userIdParam: 'passthrough'
+  },
+  shopify: {
+    couponParam: 'discount',
+    emailParam: 'email',
+    userIdParam: 'attributes[user_id]'
+  },
+  gumroad: {
+    couponParam: 'wanted',
+    emailParam: 'email',
+    userIdParam: 'id'
+  },
+  paystack: {
+    couponParam: 'code',
+    emailParam: 'email',
+    userIdParam: 'metadata'
+  },
+  // FALLBACK ADAPTER: If you pass an unlisted gateway, it safely falls back to standard universal parameters
+  default: {
+    couponParam: 'discount_code',
+    emailParam: 'email',
+    userIdParam: 'user_id'
+  }
+};
+
+// 3. The Universal handleUpgrade Function
+const handleUpgrade = (
+    type: 'monthly' | 'annual' = 'monthly', 
+    currentTier?: 'LOW' | 'MID' | 'HIGH' | 'NONE',
+    gateway: GenericGateway = 'lemonsqueezy',
+    customCheckoutUrl?: string // Allows injecting any custom checkout link dynamically
+) => {
     toast.loading(`Redirecting to secure ${type} checkout...`);
 
-    const monthlyUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84";
-    const annualUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/1b4152a4-5463-4208-9cd8-50a9f3ec7a89";
+    // Base hardcoded URLs (Replace or extend these with your other provider links)
+    const fallbackUrls: Record<string, { monthly: string; annual: string }> = {
+        lemonsqueezy: {
+            monthly: "https://lemonsqueezy.com",
+            annual: "https://lemonsqueezy.com"
+        }
+    };
 
-    const baseCheckoutUrl = type === 'annual' ? annualUrl : monthlyUrl;
-    const userId = user?._id || user?.id;
+    // Determine the baseline URL string (use custom URL if provided, otherwise fallback to registry mappings)
+    let selectedUrl = customCheckoutUrl;
+    if (!selectedUrl && fallbackUrls[gateway]) {
+        selectedUrl = type === 'annual' ? fallbackUrls[gateway].annual : fallbackUrls[gateway].monthly;
+    }
 
-    const url = new URL(baseCheckoutUrl);
-    url.searchParams.set('checkout[custom][user_id]', userId);
-    url.searchParams.set('checkout[email]', user?.email || '');
+    if (!selectedUrl) {
+        toast.error("Invalid payment configuration link.");
+        return;
+    }
 
-    // Fallback to your local calculation if currentTier is not explicitly injected
+    const userId = user?._id || user?.id || '';
+    const email = user?.email || '';
+    
+    // Safely construct URL object
+    const url = new URL(selectedUrl);
+    
+    // Fetch target gateway structural maps (or hit default fallback if missing)
+    const config = GATEWAY_REGISTRY[gateway] || GATEWAY_REGISTRY['default'];
+
+    // Inject User Identification Data and Email automatically
+    if (config.userIdParam) url.searchParams.set(config.userIdParam, userId);
+    if (config.emailParam) url.searchParams.set(config.emailParam, email);
+
+    // Resolve the active PPP tier 
     const tier = currentTier || (result as any)?.discountTier as 'LOW' | 'MID' | 'HIGH' | 'NONE' | undefined; 
 
     if (tier && tier !== 'NONE') {
         let code = "";
-        
-        // Exact mapping to match your widget multipliers:
-        // LOW  = 0.8 (20% off) -> C4MZQWOA
-        // MID  = 0.5 (50% off) -> MWNZM5NW
-        // HIGH = 0.3 (70% off) -> G2MZKXNG
         if (tier === "LOW")  code = "C4MZQWOA"; 
-        // Defaulting fallback cases to MID just like your backend widget configuration does
         else if (tier === "HIGH") code = "G2MZKXNG"; 
-        else code = "MWNZM5NW"; 
+        else code = "MWNZM5NW"; // MID Tier Fallback
 
-        if (code) {
-            url.searchParams.set('checkout[discount_code]', code);
+        // Inject the coupon parameter dynamically based on the target gateway registry instructions
+        if (code && config.couponParam) {
+            url.searchParams.set(config.couponParam, code);
+        }
+        
+        // Execute dynamic helper adjustments if the payment provider uses non-standard complex logic
+        if (code && config.customUrlHandler) {
+            config.customUrlHandler(url, code, userId, email);
         }
     }
 
+    // 4. CRITICAL INTERCEPTION FOR SDK-BASED GATEWAYS (e.g., Embedded Modals)
+    // If the payment system uses a global javascript SDK modal injection rather than page redirection,
+    // trigger their event emitter loop here and break out of the standard redirect execution.
+    if ((window as any).Paddle && gateway === 'paddle_sdk') {
+        (window as any).Paddle.Checkout.open({
+            method: 'checkout',
+            product: type === 'annual' ? 12345 : 67890, // SDK IDs
+            coupon: (tier && tier !== 'NONE') ? "MWNZM5NW" : undefined,
+            email: email,
+            passthrough: userId
+        });
+        return;
+    }
+
+    // Default global window execution for direct URL-based gateways
     window.location.href = url.toString();
 };
+
 
 
   const handleImplement = () => {
