@@ -147,16 +147,13 @@ function App() {
 // };
 
 // 1. Define support for any generic string gateway name
-
-// 2. The Master Dictionary mapping every checkout parameter name in existence
-
-type GenericGateway = 'lemonsqueezy' | 'stripe' | 'paddle' | 'shopify' | 'gumroad' | 'paystack' | string;
+type GenericGateway = 'lemonsqueezy' | 'stripe' | 'paddle' | 'shopify' | 'razorpay' | 'gumroad' | 'paystack' | string;
 
 interface GatewayConfig {
-  couponParam: string;
-  emailParam: string;
-  userIdParam: string;
-  customUrlHandler?: (url: URL, code: string, userId: string, email: string) => void;
+  couponParam: string;       // The query parameter key for discounts
+  emailParam: string;        // The query parameter key for customer emails
+  userIdParam: string;       // The query parameter key for metadata tracking
+  customUrlHandler?: (url: URL, code: string, userId: string, email: string) => void; // For weirdly formatted structures
 }
 
 const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
