@@ -331,183 +331,183 @@ app.get('/api/countries', (req, res) => res.json(getCountryList()));
 //     } catch (e) { res.status(500).send(""); }
 // });
 
-// app.get('/api/widget', async (req: any, res: any) => {
-//   try {
-//     const originalPrice = Number(req.query.price) || 12;
-//     const clientIp = requestIp.getClientIp(req) || "";
-//     const geo = geoip.lookup(clientIp);
-
-//     // 1. Prioritize the query param, then the IP lookup
-//     let countryCode = (req.query.test_country as string)?.toUpperCase() || (geo ? geo.country : "US");
-    
-//     const result = calculatePPPPrice(originalPrice, countryCode) || {} as any;
-
-//     const tierMultipliers: Record<string, number> = {
-//       NONE: 1,
-//       LOW: 0.8,
-//       MID: 0.5,
-//       HIGH: 0.3
-//     };
-//     const pppMultiplier = tierMultipliers[(result.discountTier as string) || "MID"] ?? 0.4;
-
-//     const countryConfig = pppData[countryCode];
-//     const currentRate = countryConfig && typeof countryConfig.rate === 'number' ? countryConfig.rate : 1;
-    
-//     const symbol = result.symbol || "$";
-//     const countryName = result.countryName || "your country";
-
-//     res.setHeader('Content-Type', 'application/javascript');
-//     res.setHeader('Access-Control-Allow-Origin', '*');
-//     res.send(`
-//       (function() {
-//         // --- SENIOR TEST LOGIC ---
-//         const urlParams = new URLSearchParams(window.location.search);
-//         const urlTestCountry = urlParams.get('test_country');
-//         const currentScriptUrl = new URL(document.currentScript.src);
-
-//         if (urlTestCountry && !currentScriptUrl.searchParams.get('test_country')) {
-//           const newScript = document.createElement('script');
-//           newScript.src = currentScriptUrl.origin + currentScriptUrl.pathname + '?price=${originalPrice}&test_country=' + urlTestCountry;
-//           document.body.appendChild(newScript);
-//           return;
-//         }
-
-//         function inject() {
-//           const targets = document.querySelectorAll('[data-pp-price]');
-//           targets.forEach(el => {
-//             if (el.getAttribute('data-pp-done') === 'true') return;
-            
-//             const p = parseFloat(el.getAttribute('data-pp-price'));
-//             // Safety check: if the DOM attribute itself isn't a valid number, skip it
-//             if (isNaN(p)) return;
-
-//             // Compute local value using the specific item's price 'p' instead of the global originalPrice
-//             const localValue = Math.round(p * ${pppMultiplier} * ${currentRate});
-            
-//             // If the calculation still fails for any reason, fall back gracefully
-//             if (isNaN(localValue)) return;
-
-//             const formatted = "${symbol} " + localValue.toLocaleString();
-//             const isSmall = (el.offsetWidth || el.parentElement.offsetWidth || 300) < 250;
-//             const message = isSmall ? ' Pay <b>' + formatted + '</b>' : ' Residents of ${countryName} pay only <b>' + formatted + '</b>';
-            
-//             el.innerHTML = message;
-//             el.style.cssText = "display: flex !important; width: 100% !important; flex-basis: 100% !important; margin-top: 8px !important; color: #2563eb !important; font-size: 11px !important; font-family: system-ui, sans-serif !important; border-top: 1px dashed rgba(37,99,235,0.2) !important; padding-top: 8px !important; line-height: 1.2 !important; white-space: normal !important;";
-//             el.setAttribute('data-pp-done', 'true');
-//           });
-//         }
-
-//         document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
-//         setInterval(inject, 1500);
-//       })();
-//     `);
-//   } catch (e) {
-//     res.status(500).send("");
-//   }
-// });
-
 app.get('/api/widget', async (req: any, res: any) => {
-    try {
-        // 1. Production-Grade IP & Country Detection
-        const clientIp = requestIp.getClientIp(req) || "";
-        const geo = geoip.lookup(clientIp);
-        const countryCode = (req.query.test_country as string)?.toUpperCase() || (geo ? geo.country : "US");
-        
-        // 2. Fetch Data from your Pricing Engine
-        const result = calculatePPPPrice(Number(req.query.price) || 12, countryCode);
+  try {
+    const originalPrice = Number(req.query.price) || 12;
+    const clientIp = requestIp.getClientIp(req) || "";
+    const geo = geoip.lookup(clientIp);
 
-        // 3. Map Tiers to Universal Code Names
-        let discountCode = "";
-        if (result.discountTier === "LOW") discountCode = "GLOBAL20";
-        if (result.discountTier === "MID") discountCode = "GLOBAL50";
-        if (result.discountTier === "HIGH") discountCode = "GLOBAL70";
+    // 1. Prioritize the query param, then the IP lookup
+    let countryCode = (req.query.test_country as string)?.toUpperCase() || (geo ? geo.country : "US");
+    
+    const result = calculatePPPPrice(originalPrice, countryCode) || {} as any;
 
-        // 4. Secure Headers
-        res.setHeader('Content-Type', 'application/javascript');
-        res.setHeader('Access-Control-Allow-Origin', '*');
+    const tierMultipliers: Record<string, number> = {
+      NONE: 1,
+      LOW: 0.8,
+      MID: 0.5,
+      HIGH: 0.3
+    };
+    const pppMultiplier = tierMultipliers[(result.discountTier as string) || "MID"] ?? 0.4;
 
-        res.send(`
-            (function() {
-                const CODE = "${discountCode}";
-                const COUNTRY = "${result.countryName}";
-                const LOCAL_PRICE = "${result.localPriceFormatted}";
+    const countryConfig = pppData[countryCode];
+    const currentRate = countryConfig && typeof countryConfig.rate === 'number' ? countryConfig.rate : 1;
+    
+    const symbol = result.symbol || "$";
+    const countryName = result.countryName || "your country";
 
-                // --- 1. THE NETWORK INTERCEPTOR (HARDENED) ---
-                const originalFetch = window.fetch;
-                window.fetch = function() {
-                    // Only intercept if the first argument is a string (URL)
-                    if (typeof arguments[0] === 'string' && 
-                       (arguments[0].includes('checkout') || arguments[0].includes('buy') || arguments[0].includes('pay'))) {
-                        try {
-                            const url = new URL(arguments[0], window.location.origin);
-                            url.searchParams.set('discount_code', CODE);
-                            url.searchParams.set('coupon', CODE);
-                            url.searchParams.set('checkout[discount_code]', CODE);
-                            arguments[0] = url.toString();
-                        } catch(e) { console.warn("PriceParity: Non-standard URL skip"); }
-                    }
-                    return originalFetch.apply(this, arguments);
-                };
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.send(`
+      (function() {
+        // --- SENIOR TEST LOGIC ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlTestCountry = urlParams.get('test_country');
+        const currentScriptUrl = new URL(document.currentScript.src);
 
-                // --- 2. THE UI & LINK INJECTOR ---
-                function updateUI() {
-                    // Display Badge Update
-                    document.querySelectorAll('[data-pp-price]').forEach(el => {
-                        if (el.getAttribute('data-pp-done')) return;
-                        el.innerHTML = ' ' + COUNTRY + ' Offer: <b>' + LOCAL_PRICE + '</b>';
-                        el.style.cssText = "display:inline-flex !important; align-items:center !important; gap:8px !important; background:rgba(37,99,235,0.05) !important; color:#2563eb !important; padding:8px 16px !important; border-radius:99px !important; font-size:13px !important; font-weight:700 !important; border:1px solid rgba(37,99,235,0.1) !important; margin:10px 0 !important; font-family:sans-serif !important;";
-                        el.setAttribute('data-pp-done', 'true');
-                    });
+        if (urlTestCountry && !currentScriptUrl.searchParams.get('test_country')) {
+          const newScript = document.createElement('script');
+          newScript.src = currentScriptUrl.origin + currentScriptUrl.pathname + '?price=${originalPrice}&test_country=' + urlTestCountry;
+          document.body.appendChild(newScript);
+          return;
+        }
 
-                    // Global Element Interception (Buttons and Links)
-                    document.querySelectorAll('a, button').forEach(el => {
-                        const text = (el.innerText || "").toLowerCase();
-                        const isPurchase = text.includes('buy') || text.includes('pay') || text.includes('checkout') || text.includes('order') || text.includes('subscribe');
-                        
-                        if (isPurchase) {
-                            // Link Rewriting
-                            if (el.tagName === 'A' && el.href && !el.href.includes('discount_code')) {
-                                try {
-                                    const url = new URL(el.href);
-                                    url.searchParams.set('discount_code', CODE);
-                                    url.searchParams.set('checkout[discount_code]', CODE);
-                                    url.searchParams.set('coupon', CODE);
-                                    el.href = url.toString();
-                                } catch(e) {}
-                            }
-                            
-                            // Event Capture (The 100% Fail-Safe)
-                            if (!el.getAttribute('data-pp-click-set')) {
-                                el.addEventListener('click', () => {
-                                    localStorage.setItem('priceparity_coupon', CODE);
-                                    console.log("PriceParity: Coupon cached for session.");
-                                });
-                                el.setAttribute('data-pp-click-set', 'true');
-                            }
-                        }
-                    });
-                }
+        function inject() {
+          const targets = document.querySelectorAll('[data-pp-price]');
+          targets.forEach(el => {
+            if (el.getAttribute('data-pp-done') === 'true') return;
+            
+            const p = parseFloat(el.getAttribute('data-pp-price'));
+            // Safety check: if the DOM attribute itself isn't a valid number, skip it
+            if (isNaN(p)) return;
 
-                // --- 3. THE AUTO-APPLIED BADGE ---
-                if (CODE && !document.getElementById('pp-helper')) {
-                    const badge = document.createElement('div');
-                    badge.id = 'pp-helper';
-                    badge.innerHTML = "🏷️ " + COUNTRY + " Discount: <b>" + CODE + "</b> (Auto-Applied)";
-                    badge.style.cssText = "position:fixed; bottom:20px; left:20px; z-index:999999; background:#1e293b; color:white; padding:12px 24px; border-radius:16px; font-size:12px; font-family:sans-serif; box-shadow:0 15px 35px rgba(0,0,0,0.3); border-left:4px solid #3b82f6; transition: opacity 0.5s ease;";
-                    document.body.appendChild(badge);
-                    setTimeout(() => badge.style.opacity = '0.6', 8000); 
-                }
+            // Compute local value using the specific item's price 'p' instead of the global originalPrice
+            const localValue = Math.round(p * ${pppMultiplier} * ${currentRate});
+            
+            // If the calculation still fails for any reason, fall back gracefully
+            if (isNaN(localValue)) return;
 
-                // Initial run + Periodic scan for Dynamic Apps
-                updateUI();
-                setInterval(updateUI, 2000);
-            })();
-        `);
-    } catch (e) { 
-        console.error("Critical Widget Failure:", e);
-        res.status(500).send(""); 
-    }
+            const formatted = "${symbol} " + localValue.toLocaleString();
+            const isSmall = (el.offsetWidth || el.parentElement.offsetWidth || 300) < 250;
+            const message = isSmall ? ' Pay <b>' + formatted + '</b>' : ' Residents of ${countryName} pay only <b>' + formatted + '</b>';
+            
+            el.innerHTML = message;
+            el.style.cssText = "display: flex !important; width: 100% !important; flex-basis: 100% !important; margin-top: 8px !important; color: #2563eb !important; font-size: 11px !important; font-family: system-ui, sans-serif !important; border-top: 1px dashed rgba(37,99,235,0.2) !important; padding-top: 8px !important; line-height: 1.2 !important; white-space: normal !important;";
+            el.setAttribute('data-pp-done', 'true');
+          });
+        }
+
+        document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', inject) : inject();
+        setInterval(inject, 1500);
+      })();
+    `);
+  } catch (e) {
+    res.status(500).send("");
+  }
 });
+
+// app.get('/api/widget', async (req: any, res: any) => {
+//     try {
+//         // 1. Production-Grade IP & Country Detection
+//         const clientIp = requestIp.getClientIp(req) || "";
+//         const geo = geoip.lookup(clientIp);
+//         const countryCode = (req.query.test_country as string)?.toUpperCase() || (geo ? geo.country : "US");
+        
+//         // 2. Fetch Data from your Pricing Engine
+//         const result = calculatePPPPrice(Number(req.query.price) || 12, countryCode);
+
+//         // 3. Map Tiers to Universal Code Names
+//         let discountCode = "";
+//         if (result.discountTier === "LOW") discountCode = "GLOBAL20";
+//         if (result.discountTier === "MID") discountCode = "GLOBAL50";
+//         if (result.discountTier === "HIGH") discountCode = "GLOBAL70";
+
+//         // 4. Secure Headers
+//         res.setHeader('Content-Type', 'application/javascript');
+//         res.setHeader('Access-Control-Allow-Origin', '*');
+
+//         res.send(`
+//             (function() {
+//                 const CODE = "${discountCode}";
+//                 const COUNTRY = "${result.countryName}";
+//                 const LOCAL_PRICE = "${result.localPriceFormatted}";
+
+//                 // --- 1. THE NETWORK INTERCEPTOR (HARDENED) ---
+//                 const originalFetch = window.fetch;
+//                 window.fetch = function() {
+//                     // Only intercept if the first argument is a string (URL)
+//                     if (typeof arguments[0] === 'string' && 
+//                        (arguments[0].includes('checkout') || arguments[0].includes('buy') || arguments[0].includes('pay'))) {
+//                         try {
+//                             const url = new URL(arguments[0], window.location.origin);
+//                             url.searchParams.set('discount_code', CODE);
+//                             url.searchParams.set('coupon', CODE);
+//                             url.searchParams.set('checkout[discount_code]', CODE);
+//                             arguments[0] = url.toString();
+//                         } catch(e) { console.warn("PriceParity: Non-standard URL skip"); }
+//                     }
+//                     return originalFetch.apply(this, arguments);
+//                 };
+
+//                 // --- 2. THE UI & LINK INJECTOR ---
+//                 function updateUI() {
+//                     // Display Badge Update
+//                     document.querySelectorAll('[data-pp-price]').forEach(el => {
+//                         if (el.getAttribute('data-pp-done')) return;
+//                         el.innerHTML = ' ' + COUNTRY + ' Offer: <b>' + LOCAL_PRICE + '</b>';
+//                         el.style.cssText = "display:inline-flex !important; align-items:center !important; gap:8px !important; background:rgba(37,99,235,0.05) !important; color:#2563eb !important; padding:8px 16px !important; border-radius:99px !important; font-size:13px !important; font-weight:700 !important; border:1px solid rgba(37,99,235,0.1) !important; margin:10px 0 !important; font-family:sans-serif !important;";
+//                         el.setAttribute('data-pp-done', 'true');
+//                     });
+
+//                     // Global Element Interception (Buttons and Links)
+//                     document.querySelectorAll('a, button').forEach(el => {
+//                         const text = (el.innerText || "").toLowerCase();
+//                         const isPurchase = text.includes('buy') || text.includes('pay') || text.includes('checkout') || text.includes('order') || text.includes('subscribe');
+                        
+//                         if (isPurchase) {
+//                             // Link Rewriting
+//                             if (el.tagName === 'A' && el.href && !el.href.includes('discount_code')) {
+//                                 try {
+//                                     const url = new URL(el.href);
+//                                     url.searchParams.set('discount_code', CODE);
+//                                     url.searchParams.set('checkout[discount_code]', CODE);
+//                                     url.searchParams.set('coupon', CODE);
+//                                     el.href = url.toString();
+//                                 } catch(e) {}
+//                             }
+                            
+//                             // Event Capture (The 100% Fail-Safe)
+//                             if (!el.getAttribute('data-pp-click-set')) {
+//                                 el.addEventListener('click', () => {
+//                                     localStorage.setItem('priceparity_coupon', CODE);
+//                                     console.log("PriceParity: Coupon cached for session.");
+//                                 });
+//                                 el.setAttribute('data-pp-click-set', 'true');
+//                             }
+//                         }
+//                     });
+//                 }
+
+//                 // --- 3. THE AUTO-APPLIED BADGE ---
+//                 if (CODE && !document.getElementById('pp-helper')) {
+//                     const badge = document.createElement('div');
+//                     badge.id = 'pp-helper';
+//                     badge.innerHTML = "🏷️ " + COUNTRY + " Discount: <b>" + CODE + "</b> (Auto-Applied)";
+//                     badge.style.cssText = "position:fixed; bottom:20px; left:20px; z-index:999999; background:#1e293b; color:white; padding:12px 24px; border-radius:16px; font-size:12px; font-family:sans-serif; box-shadow:0 15px 35px rgba(0,0,0,0.3); border-left:4px solid #3b82f6; transition: opacity 0.5s ease;";
+//                     document.body.appendChild(badge);
+//                     setTimeout(() => badge.style.opacity = '0.6', 8000); 
+//                 }
+
+//                 // Initial run + Periodic scan for Dynamic Apps
+//                 updateUI();
+//                 setInterval(updateUI, 2000);
+//             })();
+//         `);
+//     } catch (e) { 
+//         console.error("Critical Widget Failure:", e);
+//         res.status(500).send(""); 
+//     }
+// });
 
 // app.get('/api/widget', async (req: any, res: any) => {
 //     try {
