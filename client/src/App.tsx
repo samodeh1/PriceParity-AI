@@ -314,54 +314,105 @@ const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
 };
 
 // PASS DETECTED VALUES AS DIRECT ARGUMENTS INSTEAD OF TRUSTING WINDOW OBJECTS
- const handleUpgrade = (
+//  const handleUpgrade = (
+//     type: 'monthly' | 'annual' = 'monthly', 
+//     currentTier: 'LOW' | 'MID' | 'HIGH' | 'NONE' = 'NONE',
+//     userData: { id?: string; _id?: string; email?: string } | null = null,
+//     gateway: GenericGateway = 'lemonsqueezy'
+// ) => {
+//     toast.loading(`Redirecting to secure ${type} checkout...`);
+
+//     // YOUR LOCKED PRODUCT BUY LINKS
+//     const baseUrls = {
+//         monthly: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84",
+//         annual: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/1b4152a4-5463-4208-9cd8-50a9f3ec7a89"
+//     };
+
+//     // Forces selection of the explicit /buy/ link paths to avoid generic /checkout drops
+//     const selectedUrl = type === 'annual' ? baseUrls.annual : baseUrls.monthly;
+//     const url = new URL(selectedUrl);
+//     const config = GATEWAY_REGISTRY[gateway] || GATEWAY_REGISTRY['default'];
+
+//     // Extracting user details cleanly from safe component params
+//     const rawUserId = userData?._id || userData?.id || ''; 
+//     const rawEmail = userData?.email || '';
+
+//     const userId = typeof rawUserId === 'string' ? rawUserId.replace(/[{}]/g, '').trim() : '';
+//     const email = typeof rawEmail === 'string' ? rawEmail.replace(/[{}]/g, '').trim() : '';
+
+//     if (config.userIdParam && userId && userId !== 'undefined' && userId !== 'null') {
+//         url.searchParams.set(config.userIdParam, userId);
+//     }
+//     if (config.emailParam && email && email.includes('@')) {
+//         url.searchParams.set(config.emailParam, email);
+//     }
+
+//     // MAP DETECTED PPP TIER STRINGS TO DASHBOARD CONTEXT 
+//     if (currentTier && currentTier !== 'NONE') {
+//         let code = "";
+        
+//         if (currentTier === "LOW")  code = "C4MZQWOA";  // GLOBAL20
+//         if (currentTier === "HIGH") code = "Q2MTCYMW";  // GLOBAL70
+//         if (currentTier === "MID")  code = "MYMTQYNQ";  // GLOBAL50 
+
+//         if (code && config.couponParam) {
+//             url.searchParams.set(config.couponParam, code);
+//         }
+//     }
+
+//     // Direct browser routing execution
+//     window.location.href = url.toString();
+// };
+
+
+interface UpgradePayload {
+  variantId: string;
+  email: string;
+  discountTier: 'LOW' | 'MID' | 'HIGH' | 'NONE';
+}
+
+ const handleUpgrade = async (
     type: 'monthly' | 'annual' = 'monthly', 
     currentTier: 'LOW' | 'MID' | 'HIGH' | 'NONE' = 'NONE',
-    userData: { id?: string; _id?: string; email?: string } | null = null,
-    gateway: GenericGateway = 'lemonsqueezy'
+    user: { email?: string } | null = null
 ) => {
-    toast.loading(`Redirecting to secure ${type} checkout...`);
+    const loadingToast = toast.loading(`Initializing secure ${type} checkout session...`);
 
-    // YOUR LOCKED PRODUCT BUY LINKS
-    const baseUrls = {
-        monthly: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84",
-        annual: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/1b4152a4-5463-4208-9cd8-50a9f3ec7a89"
-    };
+    // 1. Assign your exact Lemon Squeezy product Variant IDs
+    const MONTHLY_VARIANT_ID = "83fc7d29-ff6e-48ad-aff5-818427365c84";
+    const ANNUAL_VARIANT_ID = "1b4152a4-5463-4208-9cd8-50a9f3ec7a89";
+    
+    const targetVariantId = type === 'annual' ? ANNUAL_VARIANT_ID : MONTHLY_VARIANT_ID;
 
-    // Forces selection of the explicit /buy/ link paths to avoid generic /checkout drops
-    const selectedUrl = type === 'annual' ? baseUrls.annual : baseUrls.monthly;
-    const url = new URL(selectedUrl);
-    const config = GATEWAY_REGISTRY[gateway] || GATEWAY_REGISTRY['default'];
+    try {
+        // 2. Make an authorized API call to your backend endpoint
+        // Adjust the URL if your API server runs on a different port/domain locally
+        const response = await axios.post(
+            '/api/checkout', 
+            {
+                variantId: targetVariantId,
+                email: user?.email || '',
+                discountTier: currentTier // Passes the active tier (e.g., 'HIGH', 'MID')
+            },
+            {
+                withCredentials: true // Ensures your cookie/JWT tokens are forwarded to the protect middleware
+            }
+        );
 
-    // Extracting user details cleanly from safe component params
-    const rawUserId = userData?._id || userData?.id || ''; 
-    const rawEmail = userData?.email || '';
+        toast.dismiss(loadingToast);
 
-    const userId = typeof rawUserId === 'string' ? rawUserId.replace(/[{}]/g, '').trim() : '';
-    const email = typeof rawEmail === 'string' ? rawEmail.replace(/[{}]/g, '').trim() : '';
-
-    if (config.userIdParam && userId && userId !== 'undefined' && userId !== 'null') {
-        url.searchParams.set(config.userIdParam, userId);
-    }
-    if (config.emailParam && email && email.includes('@')) {
-        url.searchParams.set(config.emailParam, email);
-    }
-
-    // MAP DETECTED PPP TIER STRINGS TO DASHBOARD CONTEXT 
-    if (currentTier && currentTier !== 'NONE') {
-        let code = "";
-        
-        if (currentTier === "LOW")  code = "C4MZQWOA";  // GLOBAL20
-        if (currentTier === "HIGH") code = "Q2MTCYMW";  // GLOBAL70
-        if (currentTier === "MID")  code = "MYMTQYNQ";  // GLOBAL50 
-
-        if (code && config.couponParam) {
-            url.searchParams.set(config.couponParam, code);
+        // 3. Redirect the user to the verified URL generated by Lemon Squeezy's API
+        if (response.data && response.data.url) {
+            window.location.href = response.data.url;
+        } else {
+            throw new Error("Invalid server routing payload configuration.");
         }
-    }
 
-    // Direct browser routing execution
-    window.location.href = url.toString();
+    } catch (error: any) {
+        toast.dismiss(loadingToast);
+        console.error("Frontend Checkout Redirection Exception:", error.response?.data || error.message);
+        toast.error(error.response?.data?.error || "Could not generate pricing tier session.");
+    }
 };
 
 
