@@ -156,18 +156,6 @@ interface GatewayConfig {
   customUrlHandler?: (url: URL, code: string, userId: string, email: string) => void; // For weirdly formatted structures
 }
 
-// 2. The Master Dictionary mapping every checkout parameter name in existence
-import { toast } from 'react-hot-toast'; // or your preferred toast library
-
-type GenericGateway = 'lemonsqueezy' | 'stripe' | 'paddle' | 'shopify' | 'gumroad' | 'paystack' | string;
-
-interface GatewayConfig {
-  couponParam: string;
-  emailParam: string;
-  userIdParam: string;
-  customUrlHandler?: (url: URL, code: string, userId: string, email: string) => void;
-}
-
 const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
   lemonsqueezy: {
     couponParam: 'checkout[discount_code]',
