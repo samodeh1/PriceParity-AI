@@ -372,7 +372,8 @@ function App() {
   const handleImplement = () => {
     if (!user?.isPro) {
       // Safely pull the dynamic discount tier from your optimization calculation state
-      const activeTier = result?.discountTier || 'MID'; 
+      const activeTier = (result as any)?.discountTier || 'MID';
+
 
       toast((t) => (
         <div className="flex flex-col gap-4 p-4 text-left max-w-[280px]">
