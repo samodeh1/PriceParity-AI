@@ -22,22 +22,32 @@ const getHeaders = () => ({
  * @param variantId - The ID of the product/plan (Monthly or Annual)
  * @param email - User's email
  * @param userId - MongoDB User ID to track fulfillment
+ * @param discountCode - OPTIONAL: The dynamic PPP discount code string (e.g. 'MYMTQYNQ')
  */
-export const createLemonSqueezyCheckout = async (storeId: string, variantId: string, email: string, userId: string) => {
+
+export const createLemonSqueezyCheckout = async (storeId: string, variantId: string, email: string, userId: string, discountCode?: string ) => {
+    
     try {
+        // Build the checkout data object structurally
+        const checkoutData: any = {
+            email: email,
+            custom: {
+                user_id: userId
+            }
+        };
+
+        // 2. CRITICAL FIX: Explicitly inject the discount code inside the JSON payload parameters
+        if (discountCode && discountCode.trim() !== "") {
+            checkoutData.discount_code = discountCode.trim().toUpperCase();
+        }
+
         const response = await axios.post(
             LEMON_SQUEEZY_URL,
             {
                 data: {
                     type: "checkouts",
                     attributes: {
-                        checkout_data: {
-                            email: email,
-                            // Pass User ID in custom data so the Webhook can find it
-                            custom: {
-                                user_id: userId
-                            }
-                        }
+                        checkout_data: checkoutData // Injected securely here
                     },
                     relationships: {
                         store: {
@@ -52,13 +62,13 @@ export const createLemonSqueezyCheckout = async (storeId: string, variantId: str
             { headers: getHeaders() }
         );
 
-        // Lemon Squeezy returns a checkout URL in attributes.url
         return response.data.data.attributes.url;
     } catch (error: any) {
         console.error("Lemon Squeezy Init Error:", error.response?.data || error.message);
         throw new Error("Could not initialize Lemon Squeezy payment");
     }
 };
+
 
 /**
  * Retrieve a checkout to verify status 
