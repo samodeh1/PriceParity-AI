@@ -81,101 +81,34 @@ function App() {
   };
 
   // --- UPDATED: LEMON SQUEEZY UPGRADE ---
-type GenericGateway = 'lemonsqueezy' | 'stripe' | 'paddle' | 'shopify' | 'gumroad' | 'paystack' | string;
-
-interface GatewayConfig {
-  couponParam: string;
-  emailParam: string;
-  userIdParam: string;
-}
-
-const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
-  lemonsqueezy: {
-    couponParam: 'checkout[discount_code]',
-    emailParam: 'checkout[email]',
-    userIdParam: 'checkout[custom][user_id]'
-  },
-  stripe: {
-    couponParam: 'prefilled_promo_code',
-    emailParam: 'prefilled_email',
-    userIdParam: 'client_reference_id'
-  },
-  paddle: {
-    couponParam: 'coupon',
-    emailParam: 'email',
-    userIdParam: 'passthrough'
-  },
-  default: {
-    couponParam: 'discount_code',
-    emailParam: 'email',
-    userIdParam: 'user_id'
-  }
-};
-
-const getActiveTier = (): 'LOW' | 'MID' | 'HIGH' | 'NONE' => {
-    const calculatedTier = (result as any)?.discountTier;
-    if (calculatedTier) return calculatedTier;
-    return country === 'NG' ? 'HIGH' : 'MID';
-};
-
 // PASS DETECTED VALUES AS DIRECT ARGUMENTS INSTEAD OF TRUSTING WINDOW OBJECTS
- const handleUpgrade = (
+ const handleUpgrade = async (
     type: 'monthly' | 'annual' = 'monthly', 
-    currentTier: 'LOW' | 'MID' | 'HIGH' | 'NONE' = getActiveTier(),
-    userData: { id?: string; _id?: string; email?: string } | null = null,
-    gateway: GenericGateway = 'lemonsqueezy'
+  userData: { id?: string; _id?: string; email?: string } | null = null
 ) => {
     toast.loading(`Redirecting to secure ${type} checkout...`);
 
-    // YOUR LOCKED PRODUCT BUY LINKS
-    const baseUrls = {
-        monthly: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84",
-        annual: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/1b4152a4-5463-4208-9cd8-50a9f3ec7a89"
-    };
+  if (!token) {
+    setIsAuthOpen(true);
+    return;
+  }
 
-    // Forces selection of the explicit /buy/ link paths to avoid generic /checkout drops
-    const selectedUrl = type === 'annual' ? baseUrls.annual : baseUrls.monthly;
-    const url = new URL(selectedUrl);
-    const config = GATEWAY_REGISTRY[gateway] || GATEWAY_REGISTRY['default'];
-
-    // Extracting user details cleanly from safe component params
-    const rawUserId = userData?._id || userData?.id || ''; 
-    const rawEmail = userData?.email || '';
-
-    const userId = typeof rawUserId === 'string' ? rawUserId.replace(/[{}]/g, '').trim() : '';
-    const email = typeof rawEmail === 'string' ? rawEmail.replace(/[{}]/g, '').trim() : '';
-
-    if (config.userIdParam && userId && userId !== 'undefined' && userId !== 'null') {
-        url.searchParams.set(config.userIdParam, userId);
+    try {
+      const response = await axios.post(`${API_BASE}/checkout`, {
+        type,
+        country,
+        email: userData?.email || user?.email || ''
+      }, { headers: { 'x-auth-token': token } });
+      window.location.href = response.data.url;
+    } catch (error) {
+      toast.error('Checkout could not be started. Please try again.');
     }
-    if (config.emailParam && email && email.includes('@')) {
-        url.searchParams.set(config.emailParam, email);
-    }
-
-    // MAP DETECTED PPP TIER STRINGS TO DASHBOARD CONTEXT 
-    if (currentTier && currentTier !== 'NONE') {
-        let code = "";
-        
-        if (currentTier === "LOW")  code = "C4MZQWOA";
-        if (currentTier === "MID")  code = "MYMTQYNQ";
-        if (currentTier === "HIGH") code = "Q2MTCYMW";
-        
-
-        if (code && config.couponParam) {
-            url.searchParams.set(config.couponParam, code);
-        }
-    }
-
-    // Direct browser routing execution
-    window.location.href = url.toString();
 };
 
   const handleImplement = () => {
     if (!user?.isPro) {
       // 1. DYNAMICALLY GRAB THE ACTIVE DISK TIER FROM YOUR COMPONENT STATE
       // Replace 'result?.discountTier' with whatever variable stores your active calculation tier
-      const activeTier = getActiveTier();
-
       toast((t) => (
         <div className="flex flex-col gap-4 p-4 text-left max-w-[280px]">
           <div>
@@ -187,7 +120,7 @@ const getActiveTier = (): 'LOW' | 'MID' | 'HIGH' | 'NONE' => {
             <button 
               onClick={() => { 
                 toast.dismiss(t.id); 
-                handleUpgrade('monthly', activeTier, user); 
+                handleUpgrade('monthly', user); 
               }} 
               className="w-full flex items-center justify-between p-3 bg-white border border-slate-200 rounded-2xl hover:border-blue-600 transition-all group"
             >
@@ -202,7 +135,7 @@ const getActiveTier = (): 'LOW' | 'MID' | 'HIGH' | 'NONE' => {
             <button 
               onClick={() => { 
                 toast.dismiss(t.id); 
-                handleUpgrade('annual', activeTier, user); 
+                handleUpgrade('annual', user); 
               }} 
               className="w-full flex items-center justify-between p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200 active:scale-95 transition-all group"
             >
@@ -468,11 +401,11 @@ const getActiveTier = (): 'LOW' | 'MID' | 'HIGH' | 'NONE' => {
 
             {/* UPGRADE TIERS UI */}
             <div className="pt-8 border-t border-slate-100 flex flex-col gap-4">
-                <div className="p-5 bg-white border border-slate-100 rounded-2xl flex justify-between items-center group cursor-pointer hover:border-blue-600" onClick={() => handleUpgrade('monthly', getActiveTier(), user)}>
+                <div className="p-5 bg-white border border-slate-100 rounded-2xl flex justify-between items-center group cursor-pointer hover:border-blue-600" onClick={() => handleUpgrade('monthly', user)}>
                    <div><p className="text-[10px] font-bold text-slate-400 uppercase">Monthly Pro</p><p className="font-black text-slate-800">$12/mo</p></div>
                    <ArrowRight size={18} className="text-slate-300 group-hover:text-blue-600"/>
                 </div>
-                <div className="p-5 bg-blue-600 text-white rounded-2xl flex justify-between items-center group cursor-pointer active:scale-95 transition-all" onClick={() => handleUpgrade('annual', getActiveTier(), user)}>
+                <div className="p-5 bg-blue-600 text-white rounded-2xl flex justify-between items-center group cursor-pointer active:scale-95 transition-all" onClick={() => handleUpgrade('annual', user)}>
                    <div><p className="text-[10px] font-bold opacity-80 uppercase">Annual Savings</p><p className="font-black text-lg">$99/yr</p></div>
                    <div className="bg-white/20 p-1.5 rounded-full"><Zap size={14} fill="currentColor"/></div>
                 </div>
@@ -493,7 +426,7 @@ const getActiveTier = (): 'LOW' | 'MID' | 'HIGH' | 'NONE' => {
                     <div className={!user?.isPro ? "blur-2xl select-none opacity-20 pointer-events-none" : ""}><p className="italic text-xl text-slate-100 font-serif leading-relaxed whitespace-pre-line"> "{result.localizedPitch}"</p></div>
                     {!user?.isPro && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/60 rounded-[2rem] p-6 text-center">
-                        <Lock className="text-blue-500 mb-3" size={20}/><button onClick={() => handleUpgrade('monthly', getActiveTier(), user)} className="bg-white text-slate-900 px-6 py-2.5 rounded-full text-[10px] font-black uppercase shadow-2xl">Unlock Pro Features</button>
+                        <Lock className="text-blue-500 mb-3" size={20}/><button onClick={() => handleUpgrade('monthly', user)} className="bg-white text-slate-900 px-6 py-2.5 rounded-full text-[10px] font-black uppercase shadow-2xl">Unlock Pro Features</button>
                       </div>
                     )}
                   </div>
