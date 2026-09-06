@@ -208,8 +208,8 @@ const handleUpgrade = (
     // Base hardcoded URLs (Replace or extend these with your other provider links)
     const fallbackUrls: Record<string, { monthly: string; annual: string }> = {
         lemonsqueezy: {
-            monthly: "https://lemonsqueezy.com",
-            annual: "https://lemonsqueezy.com"
+            monthly: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84",
+            annual: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/1b4152a4-5463-4208-9cd8-50a9f3ec7a89"
         }
     };
 
