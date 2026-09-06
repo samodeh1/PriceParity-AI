@@ -147,13 +147,148 @@ function App() {
 // };
 
 // 1. Define support for any generic string gateway name
-type GenericGateway = 'lemonsqueezy' | 'stripe' | 'paddle' | 'shopify' | 'razorpay' | 'gumroad' | 'paystack' | string;
+// type GenericGateway = 'lemonsqueezy' | 'stripe' | 'paddle' | 'shopify' | 'razorpay' | 'gumroad' | 'paystack' | string;
+
+// interface GatewayConfig {
+//   couponParam: string;       // The query parameter key for discounts
+//   emailParam: string;        // The query parameter key for customer emails
+//   userIdParam: string;       // The query parameter key for metadata tracking
+//   customUrlHandler?: (url: URL, code: string, userId: string, email: string) => void; // For weirdly formatted structures
+// }
+
+// const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
+//   lemonsqueezy: {
+//     couponParam: 'checkout[discount_code]',
+//     emailParam: 'checkout[email]',
+//     userIdParam: 'checkout[custom][user_id]'
+//   },
+//   stripe: {
+//     couponParam: 'prefilled_promo_code',
+//     emailParam: 'prefilled_email',
+//     userIdParam: 'client_reference_id'
+//   },
+//   paddle: {
+//     couponParam: 'coupon',
+//     emailParam: 'email',
+//     userIdParam: 'passthrough'
+//   },
+//   shopify: {
+//     couponParam: 'discount',
+//     emailParam: 'email',
+//     userIdParam: 'attributes[user_id]'
+//   },
+//   gumroad: {
+//     couponParam: 'wanted',
+//     emailParam: 'email',
+//     userIdParam: 'id'
+//   },
+//   paystack: {
+//     couponParam: 'code',
+//     emailParam: 'email',
+//     userIdParam: 'metadata'
+//   },
+//   default: {
+//     couponParam: 'discount_code',
+//     emailParam: 'email',
+//     userIdParam: 'user_id'
+//   }
+// };
+
+//  const handleUpgrade = (
+//     type: 'monthly' | 'annual' = 'monthly', 
+//     currentTier?: 'LOW' | 'MID' | 'HIGH' | 'NONE',
+//     gateway: GenericGateway = 'lemonsqueezy',
+//     customCheckoutUrl?: string
+// ) => {
+//     toast.loading(`Redirecting to secure ${type} checkout...`);
+
+//     // 2. YOUR EXACT VERIFIED LEMON SQUEEZY CHECKOUT LINKS
+//     const fallbackUrls: Record<string, { monthly: string; annual: string }> = {
+//         lemonsqueezy: {
+//             monthly: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84",
+//             annual: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/1b4152a4-5463-4208-9cd8-50a9f3ec7a89"
+//         }
+//     };
+
+//     // Determine target checkout URL baseline
+//     let selectedUrl = customCheckoutUrl;
+//     if (!selectedUrl && fallbackUrls[gateway]) {
+//         selectedUrl = type === 'annual' ? fallbackUrls[gateway].annual : fallbackUrls[gateway].monthly;
+//     }
+
+//     if (!selectedUrl) {
+//         toast.dismiss();
+//         toast.error("Invalid payment configuration link.");
+//         return;
+//     }
+
+//     const url = new URL(selectedUrl);
+//     const config = GATEWAY_REGISTRY[gateway] || GATEWAY_REGISTRY['default'];
+
+//     // 3. BULLETPROOF METADATA SANITIZATION ENGINE
+//     // This stops malformed variables from injecting literal strings like "undefined" or code brackets {} into URLs
+//     const rawUserId = (window as any).user?._id || (window as any).user?.id || ''; 
+//     const rawEmail = (window as any).user?.email || '';
+
+//     const userId = typeof rawUserId === 'string' ? rawUserId.replace(/[{}]/g, '').trim() : '';
+//     const email = typeof rawEmail === 'string' ? rawEmail.replace(/[{}]/g, '').trim() : '';
+
+//     // Only set parameters if they pass runtime verification checks
+//     if (config.userIdParam && userId && userId !== 'undefined' && userId !== 'null') {
+//         url.searchParams.set(config.userIdParam, userId);
+//     }
+//     if (config.emailParam && email && email.includes('@') && email !== 'undefined') {
+//         url.searchParams.set(config.emailParam, email);
+//     }
+
+//     // 4. CHOOSE DISCOUNT STRINGS MATCHING YOUR DASHBOARD
+//     const tier = currentTier || (window as any).result?.discountTier as 'LOW' | 'MID' | 'HIGH' | 'NONE' | undefined; 
+
+//     if (tier && tier !== 'NONE') {
+//         let code = "";
+        
+//         if (tier === "LOW")  code = "C4MZQWOA";  // GLOBAL20
+//         if (tier === "HIGH") code = "Q2MTCYMW";  // GLOBAL70
+//         if (tier === "MID")  code = "MYMTQYNQ";  // GLOBAL50
+
+//         if (code && config.couponParam) {
+//             url.searchParams.set(config.couponParam, code.toUpperCase().trim());
+//         }
+        
+//         if (code && config.customUrlHandler) {
+//             config.customUrlHandler(url, code, userId, email);
+//         }
+//     }
+
+//     // 5. MODAL SDK-BASED GATEWAY INTEGRATION CAPTURE
+//     if ((window as any).Paddle && gateway === 'paddle_sdk') {
+//         let sdkCode = undefined;
+//         if (tier === "LOW")  sdkCode = "C4MZQWOA";
+//         if (tier === "HIGH") sdkCode = "Q2MTCYMW";
+//         if (tier === "MID")  sdkCode = "MYMTQYNQ";
+
+//         (window as any).Paddle.Checkout.open({
+//             method: 'checkout',
+//             product: type === 'annual' ? 12345 : 67890, 
+//             coupon: sdkCode,
+//             email: email,
+//             passthrough: userId
+//         });
+//         return;
+//     }
+
+//     // Execution redirection loop
+//     window.location.href = url.toString();
+// };
+
+import { toast } from 'react-hot-toast';
+
+type GenericGateway = 'lemonsqueezy' | 'stripe' | 'paddle' | 'shopify' | 'gumroad' | 'paystack' | string;
 
 interface GatewayConfig {
-  couponParam: string;       // The query parameter key for discounts
-  emailParam: string;        // The query parameter key for customer emails
-  userIdParam: string;       // The query parameter key for metadata tracking
-  customUrlHandler?: (url: URL, code: string, userId: string, email: string) => void; // For weirdly formatted structures
+  couponParam: string;
+  emailParam: string;
+  userIdParam: string;
 }
 
 const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
@@ -172,21 +307,6 @@ const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
     emailParam: 'email',
     userIdParam: 'passthrough'
   },
-  shopify: {
-    couponParam: 'discount',
-    emailParam: 'email',
-    userIdParam: 'attributes[user_id]'
-  },
-  gumroad: {
-    couponParam: 'wanted',
-    emailParam: 'email',
-    userIdParam: 'id'
-  },
-  paystack: {
-    couponParam: 'code',
-    emailParam: 'email',
-    userIdParam: 'metadata'
-  },
   default: {
     couponParam: 'discount_code',
     emailParam: 'email',
@@ -194,90 +314,54 @@ const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
   }
 };
 
+// PASS DETECTED VALUES AS DIRECT ARGUMENTS INSTEAD OF TRUSTING WINDOW OBJECTS
  const handleUpgrade = (
     type: 'monthly' | 'annual' = 'monthly', 
-    currentTier?: 'LOW' | 'MID' | 'HIGH' | 'NONE',
-    gateway: GenericGateway = 'lemonsqueezy',
-    customCheckoutUrl?: string
+    currentTier: 'LOW' | 'MID' | 'HIGH' | 'NONE' = 'NONE',
+    userData: { id?: string; _id?: string; email?: string } | null = null,
+    gateway: GenericGateway = 'lemonsqueezy'
 ) => {
     toast.loading(`Redirecting to secure ${type} checkout...`);
 
-    // 2. YOUR EXACT VERIFIED LEMON SQUEEZY CHECKOUT LINKS
-    const fallbackUrls: Record<string, { monthly: string; annual: string }> = {
-        lemonsqueezy: {
-            monthly: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84",
-            annual: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/1b4152a4-5463-4208-9cd8-50a9f3ec7a89"
-        }
+    // YOUR LOCKED PRODUCT BUY LINKS
+    const baseUrls = {
+        monthly: "https://lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84",
+        annual: "https://lemonsqueezy.com/checkout/buy/1b4152a4-5463-4208-9cd8-50a9f3ec7a89"
     };
 
-    // Determine target checkout URL baseline
-    let selectedUrl = customCheckoutUrl;
-    if (!selectedUrl && fallbackUrls[gateway]) {
-        selectedUrl = type === 'annual' ? fallbackUrls[gateway].annual : fallbackUrls[gateway].monthly;
-    }
-
-    if (!selectedUrl) {
-        toast.dismiss();
-        toast.error("Invalid payment configuration link.");
-        return;
-    }
-
+    // Forces selection of the explicit /buy/ link paths to avoid generic /checkout drops
+    const selectedUrl = type === 'annual' ? baseUrls.annual : baseUrls.monthly;
     const url = new URL(selectedUrl);
     const config = GATEWAY_REGISTRY[gateway] || GATEWAY_REGISTRY['default'];
 
-    // 3. BULLETPROOF METADATA SANITIZATION ENGINE
-    // This stops malformed variables from injecting literal strings like "undefined" or code brackets {} into URLs
-    const rawUserId = (window as any).user?._id || (window as any).user?.id || ''; 
-    const rawEmail = (window as any).user?.email || '';
+    // Extracting user details cleanly from safe component params
+    const rawUserId = userData?._id || userData?.id || ''; 
+    const rawEmail = userData?.email || '';
 
     const userId = typeof rawUserId === 'string' ? rawUserId.replace(/[{}]/g, '').trim() : '';
     const email = typeof rawEmail === 'string' ? rawEmail.replace(/[{}]/g, '').trim() : '';
 
-    // Only set parameters if they pass runtime verification checks
     if (config.userIdParam && userId && userId !== 'undefined' && userId !== 'null') {
         url.searchParams.set(config.userIdParam, userId);
     }
-    if (config.emailParam && email && email.includes('@') && email !== 'undefined') {
+    if (config.emailParam && email && email.includes('@')) {
         url.searchParams.set(config.emailParam, email);
     }
 
-    // 4. CHOOSE DISCOUNT STRINGS MATCHING YOUR DASHBOARD
-    const tier = currentTier || (window as any).result?.discountTier as 'LOW' | 'MID' | 'HIGH' | 'NONE' | undefined; 
-
-    if (tier && tier !== 'NONE') {
+    // MAP DETECTED PPP TIER STRINGS TO DASHBOARD CONTEXT 
+    if (currentTier && currentTier !== 'NONE') {
         let code = "";
         
-        if (tier === "LOW")  code = "C4MZQWOA";  // GLOBAL20
-        if (tier === "HIGH") code = "Q2MTCYMW";  // GLOBAL70
-        if (tier === "MID")  code = "MYMTQYNQ";  // GLOBAL50
+        if (currentTier === "LOW")  code = "C4MZQWOA";  // GLOBAL20
+        if (currentTier === "HIGH") code = "Q2MTCYMW";  // GLOBAL70
+        if (currentTier === "MID")  code = "MYMTQYNQ";  // GLOBAL50
 
         if (code && config.couponParam) {
-            url.searchParams.set(config.couponParam, code.toUpperCase().trim());
-        }
-        
-        if (code && config.customUrlHandler) {
-            config.customUrlHandler(url, code, userId, email);
+            url.searchParams.set(config.couponParam, code);
         }
     }
 
-    // 5. MODAL SDK-BASED GATEWAY INTEGRATION CAPTURE
-    if ((window as any).Paddle && gateway === 'paddle_sdk') {
-        let sdkCode = undefined;
-        if (tier === "LOW")  sdkCode = "C4MZQWOA";
-        if (tier === "HIGH") sdkCode = "Q2MTCYMW";
-        if (tier === "MID")  sdkCode = "MYMTQYNQ";
-
-        (window as any).Paddle.Checkout.open({
-            method: 'checkout',
-            product: type === 'annual' ? 12345 : 67890, 
-            coupon: sdkCode,
-            email: email,
-            passthrough: userId
-        });
-        return;
-    }
-
-    // Execution redirection loop
+    // Direct browser routing execution
     window.location.href = url.toString();
 };
 
