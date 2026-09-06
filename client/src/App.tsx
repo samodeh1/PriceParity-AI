@@ -114,7 +114,39 @@ function App() {
 //     window.location.href = finalUrl;
 // };
 
-const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
+// const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
+//     toast.loading(`Redirecting to secure ${type} checkout...`);
+
+//     const monthlyUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84";
+//     const annualUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/1b4152a4-5463-4208-9cd8-50a9f3ec7a89";
+
+//     const baseCheckoutUrl = type === 'annual' ? annualUrl : monthlyUrl;
+//     const userId = user?._id || user?.id;
+
+//     // Use URLSearchParams for professional URL building (Prevents "?" vs "&" bugs)
+//     const url = new URL(baseCheckoutUrl);
+//     url.searchParams.set('checkout[custom][user_id]', userId);
+//     url.searchParams.set('checkout[email]', user?.email || '');
+
+//     const tier = (result as any)?.discountTier as 'LOW' | 'MID' | 'HIGH' | 'NONE' | undefined; 
+
+//     if (tier && tier !== 'NONE') {
+//         let code = "";
+        
+//         // MATCHING THE CODES FROM YOUR SCREENSHOT EXACTLY
+//         if (tier === "LOW")  code = "C4MZQWOA"; // 20% off code
+//         if (tier === "MID")  code = "MWNZM5NW"; // 50% off code
+//         if (tier === "HIGH") code = "G2MZKXNG"; // 70% off code (Nigeria)
+
+//         if (code) {
+//             url.searchParams.set('checkout[discount_code]', code);
+//         }
+//     }
+
+//     window.location.href = url.toString();
+// };
+
+const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly', currentTier?: 'LOW' | 'MID' | 'HIGH' | 'NONE') => {
     toast.loading(`Redirecting to secure ${type} checkout...`);
 
     const monthlyUrl = "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84";
@@ -123,20 +155,24 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
     const baseCheckoutUrl = type === 'annual' ? annualUrl : monthlyUrl;
     const userId = user?._id || user?.id;
 
-    // Use URLSearchParams for professional URL building (Prevents "?" vs "&" bugs)
     const url = new URL(baseCheckoutUrl);
     url.searchParams.set('checkout[custom][user_id]', userId);
     url.searchParams.set('checkout[email]', user?.email || '');
 
-    const tier = (result as any)?.discountTier as 'LOW' | 'MID' | 'HIGH' | 'NONE' | undefined; 
+    // Fallback to your local calculation if currentTier is not explicitly injected
+    const tier = currentTier || (result as any)?.discountTier as 'LOW' | 'MID' | 'HIGH' | 'NONE' | undefined; 
 
     if (tier && tier !== 'NONE') {
         let code = "";
         
-        // MATCHING THE CODES FROM YOUR SCREENSHOT EXACTLY
-        if (tier === "LOW")  code = "C4MZQWOA"; // 20% off code
-        if (tier === "MID")  code = "MWNZM5NW"; // 50% off code
-        if (tier === "HIGH") code = "G2MZKXNG"; // 70% off code (Nigeria)
+        // Exact mapping to match your widget multipliers:
+        // LOW  = 0.8 (20% off) -> C4MZQWOA
+        // MID  = 0.5 (50% off) -> MWNZM5NW
+        // HIGH = 0.3 (70% off) -> G2MZKXNG
+        if (tier === "LOW")  code = "C4MZQWOA"; 
+        // Defaulting fallback cases to MID just like your backend widget configuration does
+        else if (tier === "HIGH") code = "G2MZKXNG"; 
+        else code = "MWNZM5NW"; 
 
         if (code) {
             url.searchParams.set('checkout[discount_code]', code);
@@ -145,7 +181,6 @@ const handleUpgrade = (type: 'monthly' | 'annual' = 'monthly') => {
 
     window.location.href = url.toString();
 };
-
 
 
   const handleImplement = () => {
