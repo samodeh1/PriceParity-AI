@@ -22,7 +22,7 @@ const getHeaders = () => ({
  * @param variantId - The ID of the product/plan (Monthly or Annual)
  * @param email - User's email
  * @param userId - MongoDB User ID to track fulfillment
- * @param discountCode - OPTIONAL: The dynamic PPP discount code string (e.g. 'MYMTQYNQ')
+ * @param discountCode - OPTIONAL: The Lemon Squeezy discount code (e.g. 'GLOBAL50')
  */
 
 export const createLemonSqueezyCheckout = async (storeId: string, variantId: string, email: string, userId: string, discountCode?: string ) => {
