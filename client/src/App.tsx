@@ -1,3 +1,219 @@
+// import axios from 'axios';
+// import { AnimatePresence, motion } from 'framer-motion';
+// import { ArrowRight, BarChart3, Lock, ShieldCheck, Sparkles, Zap, LifeBuoy, Mail, MessageSquare } from 'lucide-react';
+// import { useEffect, useState } from "react";
+// import toast, { Toaster } from 'react-hot-toast';
+// import { Auth } from "./components/Auth";
+// import type { PricingResult } from "./types";
+// import { ChatWidget } from './components/ChatWidget';
+
+// // --- GLOBAL CONSTANTS ---
+// const IDLE_TIMEOUT = 5 * 60 * 1000; 
+// const API_BASE = "https://priceparity-api-live.onrender.com/api";
+
+// const SupportModal = ({ isOpen, onClose, onEmailClick }: { isOpen: boolean; onClose: () => void; onEmailClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) => {
+//   if (!isOpen) return null;
+
+//   return (
+//     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+//       <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl relative border border-slate-100">
+//         <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 font-bold transition-colors">✕</button>
+//         <div className="text-center mb-8">
+//           <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+//             <LifeBuoy size={32} />
+//           </div>
+//           <h2 className="text-2xl font-black text-slate-900">Customer Support</h2>
+//           <p className="text-slate-500 mt-2 text-sm leading-relaxed">Need help with your subscription or the engine? We are here for you.</p>
+//         </div>
+
+//         <div className="space-y-4">
+//           <a href="mailto:support@priceparityai.com" onClick={onEmailClick} className="flex items-center gap-4 p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all group w-full text-left">
+//             <div className="p-2 bg-blue-100 text-blue-600 rounded-lg group-hover:scale-110 transition"><Mail size={20}/></div>
+//             <div>
+//               <p className="text-sm font-bold text-slate-800">Email Support</p>
+//               <p className="text-xs text-slate-400">support@priceparityai.com</p>
+//             </div>
+//           </a>
+
+//           <button onClick={() => { if ((window as any).Tawk_API) { (window as any).Tawk_API.maximize(); onClose(); } else { toast.error("Chat loading..."); } }} 
+//             className="flex items-center gap-4 p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all group w-full text-left">
+//             <div className="p-2 bg-purple-100 text-purple-600 rounded-lg group-hover:scale-110 transition"><MessageSquare size={20}/></div>
+//             <div>
+//               <p className="text-sm font-bold text-slate-800">Live Chat</p>
+//               <p className="text-xs text-slate-400">Talk to us right now</p>
+//             </div>
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// function App() {
+//   const [productName, setProductName] = useState('');
+//   const [price, setPrice] = useState('');
+//   const [country, setCountry] = useState('NG');
+//   const [result, setResult] = useState<PricingResult | null>(null);
+//   const [loading, setLoading] = useState(false);
+//   const [isAuthOpen, setIsAuthOpen] = useState(false);
+//   const [user, setUser] = useState<any>(null);
+//   const [token, setToken] = useState<string | null>(localStorage.getItem('parity_token'));
+//   const [history, setHistory] = useState<any[]>([]);
+//   const [authLoading, setAuthLoading] = useState(true);
+//   const [isHelpOpen, setIsHelpOpen] = useState(false);
+//   const [availableCountries, setAvailableCountries] = useState<{code: string, name: string}[]>([]);
+
+//   // --- HANDLERS ---
+//   const handleOptimize = async (e: React.FormEvent) => {
+//     e.preventDefault();
+//     if (!token) return setIsAuthOpen(true);
+//     setLoading(true);
+//     try {
+//       const res = await axios.post(`${API_BASE}/calculate`, {
+//         productName, price: parseFloat(price), country
+//       }, { headers: { 'x-auth-token': token } });
+//       setResult(res.data);
+//       setUser((prev: any) => ({ ...prev, isPro: res.data.isPro }));
+//       toast.success("Strategy generated!");
+//       fetchHistory();
+//     } catch (err: any) { toast.error("Generation failed"); } 
+//     finally { setLoading(false); }
+//   };
+
+//   // --- UPDATED: LEMON SQUEEZY UPGRADE ---
+// type GenericGateway = 'lemonsqueezy' | 'stripe' | 'paddle' | 'shopify' | 'gumroad' | 'paystack' | string;
+
+// interface GatewayConfig {
+//   couponParam: string;
+//   emailParam: string;
+//   userIdParam: string;
+// }
+
+// const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
+//   lemonsqueezy: {
+//     couponParam: 'checkout[discount_code]',
+//     emailParam: 'checkout[email]',
+//     userIdParam: 'checkout[custom][user_id]'
+//   },
+//   stripe: {
+//     couponParam: 'prefilled_promo_code',
+//     emailParam: 'prefilled_email',
+//     userIdParam: 'client_reference_id'
+//   },
+//   paddle: {
+//     couponParam: 'coupon',
+//     emailParam: 'email',
+//     userIdParam: 'passthrough'
+//   },
+//   default: {
+//     couponParam: 'discount_code',
+//     emailParam: 'email',
+//     userIdParam: 'user_id'
+//   }
+// };
+
+// // PASS DETECTED VALUES AS DIRECT ARGUMENTS INSTEAD OF TRUSTING WINDOW OBJECTS
+//  const handleUpgrade = (
+//     type: 'monthly' | 'annual' = 'monthly', 
+//     currentTier: 'LOW' | 'MID' | 'HIGH' | 'NONE' = 'NONE',
+//     userData: { id?: string; _id?: string; email?: string } | null = null,
+//     gateway: GenericGateway = 'lemonsqueezy'
+// ) => {
+//     toast.loading(`Redirecting to secure ${type} checkout...`);
+
+//     // YOUR LOCKED PRODUCT BUY LINKS
+//     const baseUrls = {
+//         monthly: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84",
+//         annual: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/1b4152a4-5463-4208-9cd8-50a9f3ec7a89"
+//     };
+
+//     // Forces selection of the explicit /buy/ link paths to avoid generic /checkout drops
+//     const selectedUrl = type === 'annual' ? baseUrls.annual : baseUrls.monthly;
+//     const url = new URL(selectedUrl);
+//     const config = GATEWAY_REGISTRY[gateway] || GATEWAY_REGISTRY['default'];
+
+//     // Extracting user details cleanly from safe component params
+//     const rawUserId = userData?._id || userData?.id || ''; 
+//     const rawEmail = userData?.email || '';
+
+//     const userId = typeof rawUserId === 'string' ? rawUserId.replace(/[{}]/g, '').trim() : '';
+//     const email = typeof rawEmail === 'string' ? rawEmail.replace(/[{}]/g, '').trim() : '';
+
+//     if (config.userIdParam && userId && userId !== 'undefined' && userId !== 'null') {
+//         url.searchParams.set(config.userIdParam, userId);
+//     }
+//     if (config.emailParam && email && email.includes('@')) {
+//         url.searchParams.set(config.emailParam, email);
+//     }
+
+//     // MAP DETECTED PPP TIER STRINGS TO DASHBOARD CONTEXT 
+//     if (currentTier && currentTier !== 'NONE') {
+//         let code = "";
+        
+//         if (currentTier === "LOW")  code = "C4MZQWOA";  // GLOBAL20
+//         if (currentTier === "HIGH") code = "Q2MTCYMW";  // GLOBAL70
+//         if (currentTier === "MID")  code = "MYMTQYNQ";  // GLOBAL50 
+
+//         if (code && config.couponParam) {
+//             url.searchParams.set(config.couponParam, code);
+//         }
+//     }
+
+//     // Direct browser routing execution
+//     window.location.href = url.toString();
+// };
+
+//   const handleImplement = () => {
+//     if (!user?.isPro) {
+//       // 1. DYNAMICALLY GRAB THE ACTIVE DISK TIER FROM YOUR COMPONENT STATE
+//       // Replace 'result?.discountTier' with whatever variable stores your active calculation tier
+//       const activeTier = (result as any)?.discountTier || 'MID'; 
+
+//       toast((t) => (
+//         <div className="flex flex-col gap-4 p-4 text-left max-w-[280px]">
+//           <div>
+//             <b className="text-slate-900 text-lg leading-none">Choose Your Plan</b>
+//             <p className="text-[11px] text-slate-400 mt-1 uppercase font-bold tracking-widest">Unlock AI & Widget Access</p>
+//           </div>
+//           <div className="flex flex-col gap-3">
+//             {/* 2. CRITICAL FIX: Pass activeTier and the user object into handleUpgrade */}
+//             <button 
+//               onClick={() => { 
+//                 toast.dismiss(t.id); 
+//                 handleUpgrade('monthly', activeTier, user); 
+//               }} 
+//               className="w-full flex items-center justify-between p-3 bg-white border border-slate-200 rounded-2xl hover:border-blue-600 transition-all group"
+//             >
+//               <div className="flex flex-col text-left">
+//                 <span className="text-[10px] font-black text-slate-400 uppercase">Monthly</span>
+//                 <span className="text-sm font-black text-slate-800">Localized Pricing.</span>
+//               </div>
+//               <ArrowRight size={16} className="text-slate-300 group-hover:text-blue-600" />
+//             </button>
+            
+//             {/* 3. CRITICAL FIX: Pass activeTier and the user object into handleUpgrade */}
+//             <button 
+//               onClick={() => { 
+//                 toast.dismiss(t.id); 
+//                 handleUpgrade('annual', activeTier, user); 
+//               }} 
+//               className="w-full flex items-center justify-between p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200 active:scale-95 transition-all group"
+//             >
+//               <div className="flex flex-col text-left">
+//                 <span className="text-[10px] font-black opacity-70 uppercase text-white">Annual (Best Value)</span>
+//                 <span className="text-sm font-black text-white">Localized Pricing.</span>
+//               </div>
+//               <Zap size={16} fill="white" className="text-white" />
+//             </button>
+//           </div>
+//           <p className="text-[9px] text-center text-slate-400 italic">Secure payment via Lemonsqueezy</p>
+//         </div>
+//       ), { duration: 15000, position: 'top-center' });
+//     } else {
+//       document.getElementById('widget-section')?.scrollIntoView({ behavior: 'smooth' });
+//     }
+//   };
+
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, BarChart3, Lock, ShieldCheck, Sparkles, Zap, LifeBuoy, Mail, MessageSquare } from 'lucide-react';
@@ -80,91 +296,84 @@ function App() {
     finally { setLoading(false); }
   };
 
-  // --- UPDATED: LEMON SQUEEZY UPGRADE ---
-type GenericGateway = 'lemonsqueezy' | 'stripe' | 'paddle' | 'shopify' | 'gumroad' | 'paystack' | string;
+  const fetchHistory = async () => {
+    if (!token) return;
+    try {
+      const res = await axios.get(`${API_BASE}/strategies`, { headers: { 'x-auth-token': token } });
+      setHistory(res.data);
+    } catch (err) { console.error(err); }
+  };
 
-interface GatewayConfig {
-  couponParam: string;
-  emailParam: string;
-  userIdParam: string;
-}
-
-const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
-  lemonsqueezy: {
-    couponParam: 'checkout[discount_code]',
-    emailParam: 'checkout[email]',
-    userIdParam: 'checkout[custom][user_id]'
-  },
-  stripe: {
-    couponParam: 'prefilled_promo_code',
-    emailParam: 'prefilled_email',
-    userIdParam: 'client_reference_id'
-  },
-  paddle: {
-    couponParam: 'coupon',
-    emailParam: 'email',
-    userIdParam: 'passthrough'
-  },
-  default: {
-    couponParam: 'discount_code',
-    emailParam: 'email',
-    userIdParam: 'user_id'
-  }
-};
-
-// PASS DETECTED VALUES AS DIRECT ARGUMENTS INSTEAD OF TRUSTING WINDOW OBJECTS
- const handleUpgrade = (
-    type: 'monthly' | 'annual' = 'monthly', 
-    currentTier: 'LOW' | 'MID' | 'HIGH' | 'NONE' = 'NONE',
-    userData: { id?: string; _id?: string; email?: string } | null = null,
-    gateway: GenericGateway = 'lemonsqueezy'
-) => {
-    toast.loading(`Redirecting to secure ${type} checkout...`);
-
-    // YOUR LOCKED PRODUCT BUY LINKS
-    const baseUrls = {
-        monthly: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/83fc7d29-ff6e-48ad-aff5-818427365c84",
-        annual: "https://priceparity-ai.lemonsqueezy.com/checkout/buy/1b4152a4-5463-4208-9cd8-50a9f3ec7a89"
-    };
-
-    // Forces selection of the explicit /buy/ link paths to avoid generic /checkout drops
-    const selectedUrl = type === 'annual' ? baseUrls.annual : baseUrls.monthly;
-    const url = new URL(selectedUrl);
-    const config = GATEWAY_REGISTRY[gateway] || GATEWAY_REGISTRY['default'];
-
-    // Extracting user details cleanly from safe component params
-    const rawUserId = userData?._id || userData?.id || ''; 
-    const rawEmail = userData?.email || '';
-
-    const userId = typeof rawUserId === 'string' ? rawUserId.replace(/[{}]/g, '').trim() : '';
-    const email = typeof rawEmail === 'string' ? rawEmail.replace(/[{}]/g, '').trim() : '';
-
-    if (config.userIdParam && userId && userId !== 'undefined' && userId !== 'null') {
-        url.searchParams.set(config.userIdParam, userId);
-    }
-    if (config.emailParam && email && email.includes('@')) {
-        url.searchParams.set(config.emailParam, email);
-    }
-
-    // MAP DETECTED PPP TIER STRINGS TO DASHBOARD CONTEXT 
-    if (currentTier && currentTier !== 'NONE') {
-        let code = "";
+  useEffect(() => {
+    const initData = async () => {
+      try {
+        const countryRes = await axios.get(`${API_BASE}/countries`);
+        setAvailableCountries(countryRes.data);
         
-        if (currentTier === "LOW")  code = "C4MZQWOA";  // GLOBAL20
-        if (currentTier === "HIGH") code = "Q2MTCYMW";  // GLOBAL70
-        if (currentTier === "MID")  code = "MYMTQYNQ";  // GLOBAL50 
-
-        if (code && config.couponParam) {
-            url.searchParams.set(config.couponParam, code);
+        if (token) {
+          const userRes = await axios.get(`${API_BASE}/auth/user`, { headers: { 'x-auth-token': token } });
+          setUser(userRes.data);
+          fetchHistory();
         }
-    }
+      } catch (err) {
+        localStorage.removeItem('parity_token');
+        setToken(null);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+    initData();
+  }, [token]);
 
-    // Direct browser routing execution
-    window.location.href = url.toString();
-};
+  // --- FIXED: SECURE API CHECKOUT REDIRECT METHOD ---
+  const handleUpgrade = async (
+      type: 'monthly' | 'annual' = 'monthly', 
+      currentTier: 'LOW' | 'MID' | 'HIGH' | 'NONE' = 'NONE',
+      userData: { email?: string } | null = null
+  ) => {
+      const loadingToast = toast.loading(`Initializing secure ${type} checkout session...`);
+
+      // Your exact Lemon Squeezy product Variant IDs
+      const MONTHLY_VARIANT_ID = "83fc7d29-ff6e-48ad-aff5-818427365c84";
+      const ANNUAL_VARIANT_ID = "1b4152a4-5463-4208-9cd8-50a9f3ec7a89";
+      
+      const targetVariantId = type === 'annual' ? ANNUAL_VARIANT_ID : MONTHLY_VARIANT_ID;
+
+      try {
+          // Fire a request directly to your secure live backend endpoint
+          const response = await axios.post(
+              `${API_BASE}/checkout`, 
+              {
+                  variantId: targetVariantId,
+                  email: userData?.email || '',
+                  discountTier: currentTier 
+              },
+              {
+                  headers: token ? { 'x-auth-token': token } : {}
+              }
+          );
+
+          toast.dismiss(loadingToast);
+
+          // Redirect to the API generated URL featuring the auto-applied discount session
+          if (response.data && response.data.url) {
+              window.location.href = response.data.url;
+          } else {
+              throw new Error("Invalid backend session response payload.");
+          }
+
+      } catch (error: any) {
+          toast.dismiss(loadingToast);
+          console.error("Frontend Checkout Redirection Exception:", error.response?.data || error.message);
+          toast.error(error.response?.data?.error || "Could not generate pricing tier session.");
+      }
+  };
 
   const handleImplement = () => {
     if (!user?.isPro) {
+      // Safely pull the dynamic discount tier from your optimization calculation state
+      const activeTier = result?.discountTier || 'MID'; 
+
       toast((t) => (
         <div className="flex flex-col gap-4 p-4 text-left max-w-[280px]">
           <div>
@@ -172,14 +381,26 @@ const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
             <p className="text-[11px] text-slate-400 mt-1 uppercase font-bold tracking-widest">Unlock AI & Widget Access</p>
           </div>
           <div className="flex flex-col gap-3">
-            <button onClick={() => { toast.dismiss(t.id); handleUpgrade('monthly'); }} className="w-full flex items-center justify-between p-3 bg-white border border-slate-200 rounded-2xl hover:border-blue-600 transition-all group">
+            <button 
+              onClick={() => { 
+                toast.dismiss(t.id); 
+                handleUpgrade('monthly', activeTier, user); 
+              }} 
+              className="w-full flex items-center justify-between p-3 bg-white border border-slate-200 rounded-2xl hover:border-blue-600 transition-all group"
+            >
               <div className="flex flex-col text-left">
                 <span className="text-[10px] font-black text-slate-400 uppercase">Monthly</span>
                 <span className="text-sm font-black text-slate-800">Localized Pricing.</span>
               </div>
               <ArrowRight size={16} className="text-slate-300 group-hover:text-blue-600" />
             </button>
-            <button onClick={() => { toast.dismiss(t.id); handleUpgrade('annual'); }} className="w-full flex items-center justify-between p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200 active:scale-95 transition-all group">
+            <button 
+              onClick={() => { 
+                toast.dismiss(t.id); 
+                handleUpgrade('annual', activeTier, user); 
+              }} 
+              className="w-full flex items-center justify-between p-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200 active:scale-95 transition-all group"
+            >
               <div className="flex flex-col text-left">
                 <span className="text-[10px] font-black opacity-70 uppercase text-white">Annual (Best Value)</span>
                 <span className="text-sm font-black text-white">Localized Pricing.</span>
@@ -194,6 +415,7 @@ const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
       document.getElementById('widget-section')?.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
 
   const syncProfile = async (currentToken: string) => {
     try {
