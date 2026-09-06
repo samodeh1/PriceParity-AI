@@ -282,36 +282,36 @@ function App() {
 // };
 
 
-type GenericGateway = 'lemonsqueezy' | 'stripe' | 'paddle' | 'shopify' | 'gumroad' | 'paystack' | string;
+// type GenericGateway = 'lemonsqueezy' | 'stripe' | 'paddle' | 'shopify' | 'gumroad' | 'paystack' | string;
 
-interface GatewayConfig {
-  couponParam: string;
-  emailParam: string;
-  userIdParam: string;
-}
+// interface GatewayConfig {
+//   couponParam: string;
+//   emailParam: string;
+//   userIdParam: string;
+// }
 
-const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
-  lemonsqueezy: {
-    couponParam: 'checkout[discount_code]',
-    emailParam: 'checkout[email]',
-    userIdParam: 'checkout[custom][user_id]'
-  },
-  stripe: {
-    couponParam: 'prefilled_promo_code',
-    emailParam: 'prefilled_email',
-    userIdParam: 'client_reference_id'
-  },
-  paddle: {
-    couponParam: 'coupon',
-    emailParam: 'email',
-    userIdParam: 'passthrough'
-  },
-  default: {
-    couponParam: 'discount_code',
-    emailParam: 'email',
-    userIdParam: 'user_id'
-  }
-};
+// const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
+//   lemonsqueezy: {
+//     couponParam: 'checkout[discount_code]',
+//     emailParam: 'checkout[email]',
+//     userIdParam: 'checkout[custom][user_id]'
+//   },
+//   stripe: {
+//     couponParam: 'prefilled_promo_code',
+//     emailParam: 'prefilled_email',
+//     userIdParam: 'client_reference_id'
+//   },
+//   paddle: {
+//     couponParam: 'coupon',
+//     emailParam: 'email',
+//     userIdParam: 'passthrough'
+//   },
+//   default: {
+//     couponParam: 'discount_code',
+//     emailParam: 'email',
+//     userIdParam: 'user_id'
+//   }
+// };
 
 // PASS DETECTED VALUES AS DIRECT ARGUMENTS INSTEAD OF TRUSTING WINDOW OBJECTS
 //  const handleUpgrade = (
@@ -365,7 +365,7 @@ const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
 // };
 
 
-interface UpgradePayload {
+interface handleUpgrade {
   variantId: string;
   email: string;
   discountTier: 'LOW' | 'MID' | 'HIGH' | 'NONE';
