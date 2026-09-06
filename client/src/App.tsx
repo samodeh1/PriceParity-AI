@@ -281,7 +281,6 @@ function App() {
 //     window.location.href = url.toString();
 // };
 
-import { toast } from 'react-hot-toast';
 
 type GenericGateway = 'lemonsqueezy' | 'stripe' | 'paddle' | 'shopify' | 'gumroad' | 'paystack' | string;
 
