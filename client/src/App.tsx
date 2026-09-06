@@ -243,8 +243,8 @@ const handleUpgrade = (
     if (tier && tier !== 'NONE') {
         let code = "";
         if (tier === "LOW")  code = "C4MZQWOA"; 
-        else if (tier === "HIGH") code = "MWNZM5NW"; 
-        else code = "G2MZKXNG"; // MID Tier Fallback
+        else if (tier === "HIGH") code = "G2MZKXNG"; 
+        else code = "MWNZM5NW"; // MID Tier Fallback
 
         // Inject the coupon parameter dynamically based on the target gateway registry instructions
         if (code && config.couponParam) {
