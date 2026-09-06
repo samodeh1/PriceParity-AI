@@ -150,9 +150,9 @@ const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
     if (currentTier && currentTier !== 'NONE') {
         let code = "";
         
-        if (currentTier === "LOW")  code = "GLOBAL20";
-        if (currentTier === "HIGH") code = "GLOBAL70";
-        if (currentTier === "MID")  code = "GLOBAL50";
+        if (currentTier === "LOW")  code = "C4MZQWOA";
+        if (currentTier === "HIGH") code = "Q2MTCYMW";
+        if (currentTier === "MID")  code = "MYMTQYNQ";
 
         if (code && config.couponParam) {
             url.searchParams.set(config.couponParam, code);
@@ -529,7 +529,7 @@ const GATEWAY_REGISTRY: Record<string, GatewayConfig> = {
                 <div className="space-y-3">
                   <span className="text-blue-600 font-black text-sm">STEP 01</span>
                   <h5 className="font-bold text-slate-700 leading-tight">Create 3 Codes</h5>
-                  <p className="text-xs text-slate-400 leading-relaxed">Go to your Checkout Dashboard and create these 3 discount codes: <code className="text-blue-600 font-bold">GLOBAL20</code> (20% off), <code className="text-blue-600 font-bold">GLOBAL50</code> (50% off), and <code className="text-blue-600 font-bold">GLOBAL70</code> (70% off).</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">Use the exact discount codes configured in your Checkout Dashboard: <code className="text-blue-600 font-bold">C4MZQWOA</code> (20% off), <code className="text-blue-600 font-bold">MYMTQYNQ</code> (50% off), and <code className="text-blue-600 font-bold">Q2MTCYMW</code> (70% off).</p>
                 </div>
 
                 {/* Step 2 */}
