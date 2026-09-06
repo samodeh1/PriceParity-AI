@@ -296,6 +296,14 @@ function App() {
     finally { setLoading(false); }
   };
 
+  const fetchHistory = async () => {
+    if (!token) return;
+    try {
+      const res = await axios.get(`${API_BASE}/strategies`, { headers: { 'x-auth-token': token } });
+      setHistory(res.data);
+    } catch (err) { console.error(err); }
+  };
+
   useEffect(() => {
     const initData = async () => {
       try {
@@ -364,7 +372,7 @@ function App() {
   const handleImplement = () => {
     if (!user?.isPro) {
       // Safely pull the dynamic discount tier from your optimization calculation state
-      const activeTier = (result as (PricingResult & { discountTier?: 'LOW' | 'MID' | 'HIGH' | 'NONE' }) | null)?.discountTier || 'MID'; 
+      const activeTier = result?.discountTier || 'MID'; 
 
       toast((t) => (
         <div className="flex flex-col gap-4 p-4 text-left max-w-[280px]">
@@ -409,6 +417,7 @@ function App() {
   };
 
 
+
   const syncProfile = async (currentToken: string) => {
     try {
       const res = await axios.get(`${API_BASE}/auth/me`, { headers: { 'x-auth-token': currentToken } });
@@ -417,13 +426,13 @@ function App() {
     finally { setAuthLoading(false); }
   };
 
-  const fetchHistory = async () => {
-    if (!token) return;
-    try {
-      const res = await axios.get(`${API_BASE}/strategies`, { headers: { 'x-auth-token': token } });
-      setHistory(res.data);
-    } catch (err) { console.error(err); }
-  };
+  // const fetchHistory = async () => {
+  //   if (!token) return;
+  //   try {
+  //     const res = await axios.get(`${API_BASE}/strategies`, { headers: { 'x-auth-token': token } });
+  //     setHistory(res.data);
+  //   } catch (err) { console.error(err); }
+  // };
 
   const handleEmailClick = (e: React.MouseEvent) => {
     e.preventDefault(); 
