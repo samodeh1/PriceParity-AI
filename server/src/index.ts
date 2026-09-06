@@ -415,19 +415,13 @@ app.get('/api/widget', async (req: any, res: any) => {
     let countryCode = (req.query.test_country as string)?.toUpperCase() || (geo ? geo.country : "US");
     const result = calculatePPPPrice(originalPrice, countryCode) || {} as any;
 
-    // // Explicit tier definitions mapping exactly to your checkout discounts
-    // const tierMultipliers: Record<string, number> = {
-    //   NONE: 1,      // 0% discount
-    //   LOW: 0.8,     // 20% discount (C4MZQWOA)
-    //   MID: 0.5,     // 50% discount (MWNZM5NW)
-    //   HIGH: 0.3     // 70% discount (G2MZKXNG)
-    // };
-
-     // 3. Map Tiers to Universal Code Names
-        let discountCode = "";
-        if (result.discountTier === "LOW") discountCode = "GLOBAL20";
-        if (result.discountTier === "MID") discountCode = "GLOBAL50";
-        if (result.discountTier === "HIGH") discountCode = "GLOBAL70";
+    // Explicit tier definitions mapping exactly to your checkout discounts
+    const tierMultipliers: Record<string, number> = {
+      NONE: 1,      // 0% discount
+      LOW: 0.8,     // 20% discount (C4MZQWOA)
+      MID: 0.5,     // 50% discount (I0MDA2MQ)
+      HIGH: 0.3     // 70% discount (M3OTUXMG)
+    };
 
     // If an undefined tier slips through, fallback safely to "MID" to match handleUpgrade
     const verifiedTier = (result.discountTier as string) || "MID";
