@@ -165,8 +165,8 @@ const getCheckoutTier = (
         url.searchParams.set(config.emailParam, email);
     }
 
-    // MAP DETECTED PPP TIER STRINGS TO DASHBOARD CONTEXT 
-    if (currentTier && currentTier !== 'NONE') {
+    // Annual pricing is already fixed at the discounted $99 price.
+    if (type !== 'annual' && currentTier && currentTier !== 'NONE') {
         let code = "";
         
         if (currentTier === "LOW")  code = "C4MZQWOA";
