@@ -20,6 +20,8 @@ Idle Session Management: Auto-logs users out after 15 minutes of inactivity for 
 Environment Shielding: Securely handles sensitive API keys via Render and Vercel environments.
 Embedded Website Widget: Provides a copy-paste script that creators can use to show localized prices on their own websites.
 Persistent Strategy History: Logged-in users can access a history of every global strategy they have generated.
+
+Subscriber setup instructions: See [SUBSCRIBER-GUIDE.md](./SUBSCRIBER-GUIDE.md) for widget installation, discount tiers, gateway-specific checkout setup, and testing.
 🧠 Engineering Challenges Solved
 Cross-Origin Security: Managed COOP (Cross-Origin Opener Policy) headers to allow secure communication between Google OAuth popups and the React application.
 State Synchronization: Built a profile-sync logic that verifies "Pro" status directly from the database on every page refresh, preventing local storage manipulation.
