@@ -605,8 +605,8 @@ const getCheckoutTier = (
                   <ShieldCheck size={24} />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-black text-slate-800">Merchant Implementation</h3>
-                  <p className="text-slate-400 text-sm">Follow these 3 steps to go live globally.</p>
+                  <h3 className="text-2xl font-black text-slate-800">Website Pricing Setup</h3>
+                  <p className="text-slate-400 text-sm">Set up once, then localize every marked product price.</p>
                 </div>
               </div>
 
@@ -614,27 +614,30 @@ const getCheckoutTier = (
                 {/* Step 1 */}
                 <div className="space-y-3">
                   <span className="text-blue-600 font-black text-sm">STEP 01</span>
-                  <h5 className="font-bold text-slate-700 leading-tight">Create 3 Codes</h5>
-                  <p className="text-xs text-slate-400 leading-relaxed">Go to your Checkout Dashboard and create these 3 discount codes: <code className="text-blue-600 font-bold">GLOBAL20</code> (20% off), <code className="text-blue-600 font-bold">GLOBAL50</code> (50% off), and <code className="text-blue-600 font-bold">GLOBAL70</code> (70% off).</p>
+                  <h5 className="font-bold text-slate-700 leading-tight">Mark Your Prices</h5>
+                  <p className="text-xs text-slate-400 leading-relaxed">Add the marker to your shared product-price template so every product using it can update automatically.</p>
+                  <div className="bg-slate-900 p-3 rounded-lg font-mono text-[9px] text-blue-300">
+                    {`<span data-pp-price="100"></span>`}
+                  </div>
                 </div>
 
                 {/* Step 2 */}
                 <div className="space-y-3">
                   <span className="text-blue-600 font-black text-sm">STEP 02</span>
-                  <h5 className="font-bold text-slate-700 leading-tight">Markup Prices</h5>
-                  <p className="text-xs text-slate-400 leading-relaxed">Add the attribute <code className="bg-slate-100 px-1 italic">data-pp-price="VALUE"</code> to any element where you want the fair price to appear.</p>
-                  <div className="bg-slate-900 p-3 rounded-lg font-mono text-[9px] text-blue-300">
-                    {`<span data-pp-price="100"></span>`}
+                  <h5 className="font-bold text-slate-700 leading-tight">Install Once</h5>
+                  <p className="text-xs text-slate-400 leading-relaxed">Add the script in your site's global custom-code area. Do not add it to every product page.</p>
+                  <div className="bg-slate-900 p-3 rounded-lg font-mono text-[9px] text-blue-300 break-all">
+                    {`<script src="${API_BASE}/api/widget"></script>`}
                   </div>
                 </div>
 
                 {/* Step 3 */}
                 <div className="space-y-3">
                   <span className="text-blue-600 font-black text-sm">STEP 03</span>
-                  <h5 className="font-bold text-slate-700 leading-tight">Install Script</h5>
-                  <p className="text-xs text-slate-400 leading-relaxed">Paste this single script tag right before your closing &lt;/body&gt; tag.</p>
-                  <div className="bg-slate-900 p-3 rounded-lg font-mono text-[9px] text-blue-300 break-all overflow-hidden">
-                    {`<script src="${API_BASE}/widget"></script>`}
+                  <h5 className="font-bold text-slate-700 leading-tight">Match Checkout</h5>
+                  <p className="text-xs text-slate-400 leading-relaxed">Create your 20%, 50%, and 70% gateway discounts, then test each tier against the displayed price.</p>
+                  <div className="bg-slate-900 p-3 rounded-lg font-mono text-[9px] text-blue-300">
+                    {`HIGH = 30% of base price\nMID = 50%\nLOW = 80%`}
                   </div>
                 </div>
               </div>
