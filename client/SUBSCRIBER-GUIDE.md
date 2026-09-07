@@ -2,9 +2,13 @@
 
 Use this guide to show purchasing-power prices on your website and keep the amount shown by PriceParity consistent with the amount charged by your payment gateway.
 
+This is a one-time setup. Add the script once, then mark the prices you want changed. One script can update every marked product price on the site at once.
+
 ## Important: what the script does
 
 The script detects the visitor's country from their IP address and changes the content of elements marked with `data-pp-price`. It displays a localized price; it does not automatically change a Stripe, Paystack, Paddle, Gumroad, Shopify, or other checkout.
+
+The script cannot safely identify every price on every website by itself. Each price area must be marked once. After that, the single script updates all marked prices together.
 
 Your checkout must use the same tier rules as the widget:
 
@@ -14,6 +18,19 @@ Your checkout must use the same tier rules as the widget:
 | `LOW`            |      20% |  80% of original price |
 | `MID`            |      50% |  50% of original price |
 | `HIGH`           |      70% |  30% of original price |
+
+## Easiest setup for non-technical subscribers
+
+If you do not edit website code yourself, send this guide to the person who manages your website or contact your website platform's support team. Ask them to:
+
+1. Add `data-pp-price="NORMAL_PRICE"` to the shared product-price template.
+2. Add the one-line script in the site's global custom-code area.
+
+Give them this exact message:
+
+> Please add the PriceParity script site-wide and add `data-pp-price="NORMAL_PRICE"` to the shared product-price template. Load the script once, not once per product. Keep checkout connected to the same 20%, 50%, and 70% tier rules.
+
+If the site uses one shared product template, the price marker usually needs to be added only there. The script can then update all products using that template.
 
 ## 1. Add the price marker
 
@@ -33,15 +50,30 @@ You can use more than one marker on the same page:
 
 The value in `data-pp-price` must be a positive number and should be the same base price used by your checkout.
 
+### If your website has many products
+
+Do not paste the script into every product page. Add it once in the global header, footer, or custom-code section. Add the price marker to the shared product-card, product-template, or price component so every product using it is updated.
+
 ## 2. Add the one-line script
 
-Paste this once before the closing `</body>` tag. Do not add it once per price.
+Paste this once before the closing `</body>` tag. Do not add it once per price or product.
 
 ```html
 <script src="https://priceparity-api-live.onrender.com/api/widget"></script>
 ```
 
 Publish the page and confirm that the marker is replaced by a localized price.
+
+### Common no-code locations
+
+- **WordPress:** site-wide header/footer or a custom-code plugin; add the marker to the product template.
+- **Shopify:** theme custom liquid or theme code for the script; add the marker to the shared product-price snippet.
+- **Wix:** site custom-code area for the script; add the marker in the product-page template.
+- **Webflow:** Project Settings custom code for the script; add the marker to the shared product-price component.
+- **Framer:** site custom code for the script; add the marker to the shared product component.
+- **Custom HTML:** add the marker around each base price and place the script before `</body>`.
+
+Menu names can vary. Search the platform help center for “site-wide custom code” and “product template.”
 
 ## 3. Create gateway discounts
 

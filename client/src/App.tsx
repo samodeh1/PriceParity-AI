@@ -1,11 +1,12 @@
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, BarChart3, Lock, ShieldCheck, Sparkles, Zap, LifeBuoy, Mail, MessageSquare } from 'lucide-react';
+import { ArrowRight, BarChart3, Download, Lock, ShieldCheck, Sparkles, Zap, LifeBuoy, Mail, MessageSquare } from 'lucide-react';
 import { useCallback, useEffect, useState } from "react";
 import toast, { Toaster } from 'react-hot-toast';
 import { Auth } from "./components/Auth";
 import type { PricingResult } from "./types";
 import { ChatWidget } from './components/ChatWidget';
+import { jsPDF } from 'jspdf';
 
 // --- GLOBAL CONSTANTS ---
 const IDLE_TIMEOUT = 5 * 60 * 1000; 
@@ -253,6 +254,73 @@ const getCheckoutTier = (
     navigator.clipboard.writeText("support@priceparityai.com");
     toast.success("Opening mailbox & email copied!", { icon: '', duration: 3000 });
     setTimeout(() => { window.location.href = "mailto:support@priceparityai.com"; }, 100);
+  };
+
+  const downloadSubscriberGuide = () => {
+    const document = new jsPDF();
+    const content = [
+      'PriceParity AI Subscriber Guide',
+      '',
+      'ONE-TIME SETUP',
+      'Add the script once site-wide. Add the price marker to the shared product template. One script updates every marked product price on the site.',
+      '',
+      'IMPORTANT',
+      'The script detects the visitor country and updates marked prices. It does not automatically change a payment gateway checkout.',
+      '',
+      '1. MARK YOUR PRODUCT PRICES',
+      'Add this to every price area, or add it once to your shared product-price template:',
+      '<span data-pp-price="100"></span>',
+      'Replace 100 with the normal price in your base currency. Use the same base price in checkout.',
+      '',
+      '2. ADD THE SCRIPT ONCE',
+      'Paste this once in the global header, footer, or custom-code area before </body>:',
+      '<script src="https://priceparity-api-live.onrender.com/api/widget"></script>',
+      '',
+      '3. CREATE YOUR DISCOUNTS',
+      'LOW = 20% off, MID = 50% off, HIGH = 70% off. Use codes created in your own payment gateway.',
+      '',
+      '4. CONNECT CHECKOUT',
+      'Your checkout must use the same tier as the widget:',
+      'NONE = normal price | LOW = 80% of base | MID = 50% of base | HIGH = 30% of base',
+      'Use either a reduced amount or a coupon, never both.',
+      'For reliable results, determine the country and tier on your server before creating checkout.',
+      '',
+      'GATEWAY NOTES',
+      'Lemon Squeezy: use checkout_data.discount_code or a server-created checkout.',
+      'Stripe: use Checkout, Payment Links, or a server-created session with a promotion code.',
+      'Paystack: initialize the final amount on your server and verify the transaction.',
+      'Paddle: use its checkout integration and confirm payment with webhooks.',
+      'Gumroad: use separate links or coupons and verify the final amount.',
+      'Shopify: use discount URLs, automatic discounts, Functions, or a custom app.',
+      '',
+      '5. TEST BEFORE LAUNCH',
+      'HIGH country: widget and checkout must charge 30% of the base price.',
+      'MID country: widget and checkout must charge 50% of the base price.',
+      'LOW country: widget and checkout must charge 80% of the base price.',
+      'NONE country: widget and checkout must charge the normal price.',
+      'Also check taxes, currency conversion, rounding, mobile layout, and private browsing.',
+      '',
+      'TROUBLESHOOTING',
+      'Invalid discount: confirm the code is active, applies to the product, and has not expired.',
+      'Different widget and checkout totals: use the same server-side tier, currency, and rounding rules.',
+      'Many products: add the marker to the shared product template and load the script only once.',
+      '',
+      'Support: support@priceparityai.com'
+    ];
+    const pageWidth = document.internal.pageSize.getWidth() - 28;
+    let y = 18;
+    document.setFont('helvetica', 'normal');
+    document.setFontSize(10);
+    content.forEach((paragraph) => {
+      const lines = document.splitTextToSize(paragraph, pageWidth);
+      if (y + lines.length * 5 > 280) {
+        document.addPage();
+        y = 18;
+      }
+      document.text(lines, 14, y);
+      y += lines.length * 5 + 2;
+    });
+    document.save('priceparity-subscriber-guide.pdf');
   };
 
   const handleLogout = () => {
@@ -579,6 +647,13 @@ const getCheckoutTier = (
                 className="mt-10 w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-all active:scale-95 shadow-xl"
               >
                 Copy Universal Production Script
+              </button>
+              <button
+                onClick={downloadSubscriberGuide}
+                className="mt-3 w-full py-4 border-2 border-slate-200 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-widest hover:border-blue-600 hover:text-blue-600 transition-all active:scale-95"
+              >
+                <Download size={16} className="inline-block mr-2" />
+                Download Subscriber Guide PDF
               </button>
             </div>
           </motion.section>
