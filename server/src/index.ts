@@ -139,8 +139,8 @@ app.get('/api/widget', async (req: any, res: any) => {
       HIGH: 0.3     
     };
 
-    const verifiedTier = (result.discountTier as string) || "MID";
-    const pppMultiplier = tierMultipliers[verifiedTier] ?? 0.5;
+    const verifiedTier = (result.discountTier as string) || "NONE";
+    const pppMultiplier = tierMultipliers[verifiedTier] ?? 1;
 
     const countryConfig = pppData[countryCode];
     const currentRate = countryConfig && typeof countryConfig.rate === 'number' ? countryConfig.rate : 1;

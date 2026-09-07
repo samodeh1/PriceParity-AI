@@ -242,7 +242,7 @@ export const getCountryList = () => {
 
 export const calculatePPPPrice = (originalPrice: number, countryCode: string) => {
     const code = countryCode.toUpperCase();
-    const config = pppData[code] || { tier: "MID" }; // Default to 50% off for unlisted
+    const config = pppData[code] || { tier: "NONE" }; // Do not discount unlisted countries
 
     const tierMultipliers = {
         "NONE": 1.0,
