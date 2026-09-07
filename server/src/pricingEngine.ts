@@ -153,7 +153,7 @@ export const pppData: Record<string, PPPDataEntry> = {
   "PL": { tier: "MID",  currency: "PLN", symbol: "zł", rate: 3.95 },
   "PT": { tier: "MID",  currency: "EUR", symbol: "€", rate: 0.86 },
   "PW": { tier: "LOW",  currency: "USD", symbol: "$", rate: 1.0 },
-"QA": { tier: "NONE", currency: "QAR", symbol: "ر.ق", rate: 3.64 },
+  "QA": { tier: "NONE", currency: "QAR", symbol: "ر.ق", rate: 3.64 },
   "RO": { tier: "MID",  currency: "RON", symbol: "lei", rate: 4.28 },
   "RS": { tier: "MID",  currency: "RSD", symbol: "дин.", rate: 100.95 },
   "RU": { tier: "HIGH", currency: "RUB", symbol: "₽", rate: 91.2 },

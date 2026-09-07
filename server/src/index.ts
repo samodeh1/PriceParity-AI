@@ -21,6 +21,9 @@ import User from './models/User.js';
 dotenv.config();
 const app = express();
 
+const isProduction = process.env.NODE_ENV === 'production';
+const testCountryEnabled = process.env.ALLOW_TEST_COUNTRY === 'true' && !isProduction;
+
 app.use(cors({
     origin: ["https://priceparityai.com",
              "https://www.priceparityai.com",
@@ -34,11 +37,28 @@ app.use(express.json({
     verify: (req: any, _res: any, buf: Buffer) => { req.rawBody = buf; }
 }));
 
+app.get('/health', (_req: Request, res: Response) => {
+    const databaseReady = mongoose.connection.readyState === 1;
+    res.status(databaseReady ? 200 : 503).json({
+        status: databaseReady ? 'ok' : 'degraded',
+        database: databaseReady ? 'connected' : 'disconnected'
+    });
+});
+
 // --- ROUTES ---
 
 app.post('/api/calculate', protect, async (req: any, res: Response) => {
     const { price, country, productName } = req.body;
     try {
+        if (!Number.isFinite(price) || price <= 0 || price > 100000000) {
+            return res.status(400).json({ message: "Price must be a positive number." });
+        }
+        if (typeof country !== 'string' || !/^[A-Z]{2}$/i.test(country)) {
+            return res.status(400).json({ message: "Country must be a two-letter country code." });
+        }
+        if (typeof productName !== 'string' || productName.trim().length < 1 || productName.length > 200) {
+            return res.status(400).json({ message: "Product name is required and must be under 200 characters." });
+        }
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -68,15 +88,21 @@ app.post('/api/calculate', protect, async (req: any, res: Response) => {
 
 app.post('/api/webhook/lemonsqueezy', async (req: any, res: any) => {
     try {
+        if (!process.env.LEMON_SQUEEZY_WEBHOOK_SECRET || !req.rawBody) {
+            return res.status(503).send('Webhook is not configured');
+        }
         const hmac = crypto.createHmac('sha256', process.env.LEMON_SQUEEZY_WEBHOOK_SECRET || "");
         const digest = Buffer.from(hmac.update(req.rawBody).digest('hex'), 'utf8');
         const signature = Buffer.from(req.get('X-Signature') || '', 'utf8');
 
-        if (!crypto.timingSafeEqual(digest, signature)) {
+        if (digest.length !== signature.length || !crypto.timingSafeEqual(digest, signature)) {
             return res.status(401).send('Invalid signature');
         }
 
         const { data, meta } = req.body;
+        if (!meta || !data?.attributes) {
+            return res.status(400).send('Invalid webhook payload');
+        }
         
         if (meta.event_name === 'order_created' || meta.event_name === 'subscription_created') {
             const userId = meta.custom_data?.user_id;
@@ -97,10 +123,20 @@ app.post('/api/webhook/lemonsqueezy', async (req: any, res: any) => {
                 expiryDate.setUTCDate(expiryDate.getUTCDate() + 30);
             }
 
-            await User.findByIdAndUpdate(userId, { 
+            const eventId = String(data.id || '');
+            if (!eventId) return res.status(400).send('Missing webhook event ID');
+
+            const updatedUser = await User.findOneAndUpdate(
+                { _id: userId, lastPaymentReference: { $ne: eventId } },
+                {
                 isPro: true, 
-                proExpiry: expiryDate 
-            });
+                proExpiry: expiryDate,
+                lastPaymentReference: eventId
+                },
+                { new: true }
+            );
+
+            if (!updatedUser) return res.status(200).send('Already processed');
 
             console.log(`Success: Account ${userId} upgraded to Pro. Expires on: ${expiryDate.toISOString()}`);
         }
@@ -125,11 +161,18 @@ app.get('/api/countries', (_req: Request, res: Response) => res.json(getCountryL
 
 app.get('/api/widget', async (req: any, res: any) => {
   try {
-    const originalPrice = Number(req.query.price) || 12;
+        const originalPrice = Number(req.query.price) || 12;
+        if (!Number.isFinite(originalPrice) || originalPrice <= 0 || originalPrice > 100000000) {
+            return res.status(400).send('Invalid price');
+        }
     const clientIp = requestIp.getClientIp(req) || "";
     const geo = geoip.lookup(clientIp);
 
-    let countryCode = (req.query.test_country as string)?.toUpperCase() || (geo ? geo.country : "US");
+        const requestedTestCountry = (req.query.test_country as string)?.toUpperCase();
+        if (requestedTestCountry && !testCountryEnabled) {
+            return res.status(400).send('Test country is disabled');
+        }
+        const countryCode = requestedTestCountry || (geo ? geo.country : "US");
     const result = calculatePPPPrice(originalPrice, countryCode) || {} as any;
 
     const tierMultipliers: Record<string, number> = {
@@ -197,6 +240,15 @@ app.get('/api/widget', async (req: any, res: any) => {
 app.post('/api/checkout', protect, async (req: any, res: any) => {
     try {
         const { variantId, email, discountTier } = req.body;
+        if (typeof variantId !== 'string' || !/^\d+$/.test(variantId)) {
+            return res.status(400).json({ error: "A valid Lemon Squeezy variant ID is required." });
+        }
+        if (typeof email !== 'string' || !email.includes('@') || email.length > 320) {
+            return res.status(400).json({ error: "A valid email is required." });
+        }
+        if (!['LOW', 'MID', 'HIGH', 'NONE'].includes(discountTier)) {
+            return res.status(400).json({ error: "A valid discount tier is required." });
+        }
         // Accessing the verified user ID from your protect authentication middleware context safely
         const userId = req.user?.id; 
 

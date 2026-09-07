@@ -34,7 +34,10 @@ router.post('/google', async (req, res) => {
             await user.save();
         }
 
-        const secret = process.env.JWT_SECRET || 'fallback_secret_key';
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+            return res.status(503).json({ message: "Authentication is not configured." });
+        }
         const ourToken = jwt.sign({ id: user._id }, secret, { expiresIn: '7d' });
 
         return res.json({ token: ourToken, user });
