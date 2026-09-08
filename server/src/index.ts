@@ -236,6 +236,21 @@ app.get('/api/widget', async (req: any, res: any) => {
   }
 });
 
+app.get('/sitemap.xml', (req, res) => {
+  res.header('Content-Type', 'application/xml');
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://sitemaps.org">
+  <url>
+    <loc>https://priceparityai.com</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <!-- Add additional sub-page blocks here if you have internal routes -->
+</urlset>`);
+});
+
+
 // --- NEW CHECKOUT ROUTE INTEGRATED FLUIDLY HERE ---
 app.post('/api/checkout', protect, async (req: any, res: any) => {
     try {
