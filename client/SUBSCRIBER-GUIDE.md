@@ -30,6 +30,18 @@ Give them this exact message:
 
 > Please add the PriceParity script site-wide and add `data-pp-price="NORMAL_PRICE"` to the shared product-price template. Load the script once, not once per product. Keep checkout connected to the same 20%, 50%, and 70% tier rules.
 
+## WordPress: install the plugin (recommended)
+
+For WordPress sites, use the PriceParity AI plugin instead of editing theme code:
+
+1. Download `wordpress-plugin/priceparity-ai.zip` from the project.
+2. In WordPress, open **Plugins > Add New > Upload Plugin** and upload the ZIP.
+3. Activate **PriceParity AI Widget**.
+4. If the site uses WooCommerce, product prices are marked and the widget script is installed automatically.
+5. For a regular WordPress page, add a **Shortcode** block containing `[priceparity_price price="100"]` and replace `100` with the normal price.
+
+The plugin does not change cart or checkout totals. Configure the matching gateway discounts or server-side checkout rules before launch.
+
 If the site uses one shared product template, the price marker usually needs to be added only there. The script can then update all products using that template.
 
 ## 1. Add the price marker

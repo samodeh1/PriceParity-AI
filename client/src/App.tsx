@@ -627,7 +627,7 @@ const getCheckoutTier = (
                   <h5 className="font-bold text-slate-700 leading-tight">Install Once</h5>
                   <p className="text-xs text-slate-400 leading-relaxed">Add the script in your site's global custom-code area. Do not add it to every product page.</p>
                   <div className="bg-slate-900 p-3 rounded-lg font-mono text-[9px] text-blue-300 break-all">
-                    {`<script src="${API_BASE}/api/widget"></script>`}
+                    {`<script src="${API_BASE}/widget"></script>`}
                   </div>
                 </div>
 
