@@ -651,6 +651,13 @@ const getCheckoutTier = (
               >
                 Copy Universal Production Script
               </button>
+              <a
+                href="https://github.com/samodeh1/PriceParity-AI/raw/main/wordpress-plugin/priceparity-ai.zip"
+                download
+                className="mt-3 block w-full py-4 text-center border-2 border-blue-600 text-blue-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all active:scale-95"
+              >
+                Download WordPress Plugin
+              </a>
               <button
                 onClick={downloadSubscriberGuide}
                 className="mt-3 w-full py-4 border-2 border-slate-200 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-widest hover:border-blue-600 hover:text-blue-600 transition-all active:scale-95"

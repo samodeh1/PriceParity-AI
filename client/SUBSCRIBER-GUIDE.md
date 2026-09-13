@@ -34,7 +34,7 @@ Give them this exact message:
 
 For WordPress sites, use the PriceParity AI plugin instead of editing theme code:
 
-1. Download `wordpress-plugin/priceparity-ai.zip` from the project.
+1. Download the [PriceParity AI WordPress plugin ZIP](https://github.com/samodeh1/PriceParity-AI/raw/main/wordpress-plugin/priceparity-ai.zip).
 2. In WordPress, open **Plugins > Add New > Upload Plugin** and upload the ZIP.
 3. Activate **PriceParity AI Widget**.
 4. If the site uses WooCommerce, product prices are marked and the widget script is installed automatically.
