@@ -1,4 +1,17 @@
 {
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "priceparityai.com"
+        }
+      ],
+      "destination": "https://www.priceparityai.com/:path*",
+      "statusCode": 308
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
